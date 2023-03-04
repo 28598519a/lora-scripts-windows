@@ -5,7 +5,7 @@ $reg_data_dir = ""                           # directory for regularization imag
 
 # Train related params | 訓練相關參數
 $resolution = "512,512"      # image resolution w,h. 圖片分辨率，寬,高。支持非正方形，但必須是 64 倍數。
-$batch_size = 1              # batch size
+$batch_size = 2              # batch size | 建議2或4 (若VRAM不夠設1)
 $max_train_epoches = 20      # max train epoches | 最大訓練 epoch
 $save_every_n_epochs = 2     # save every n epochs | 每 N 個 epoch 保存一次
 $network_dim = 32            # network dim | 常用 4~128，不是越大越好
@@ -34,7 +34,12 @@ $persistent_data_loader_workers = 0 # persistent dataloader workers | 容易爆�
 
 # 優化器設置
 $use_8bit_adam = 1 # use 8bit adam optimizer | 使用 8bit adam 優化器節省顯存，默認啟用。部分 10 系老顯卡無法使用，修改為 0 禁用。
-$use_lion = 0      # use lion optimizer | 使用 Lion 優化器
+$use_lion = 0      # use lion optimizer | 使用 Lion 優化器。不推薦
+
+# LoCon 訓練設置 (目前不建議使用)
+$enable_locon_train = 0 # enable LoCon train | 啟用 LoCon 訓練 (Full Net LoRA)。啟用後 network_dim 和 network_alpha 應當選擇較小的值，比如 2~16
+$conv_dim = 4           # conv dim | 類似於 network_dim，推薦為 4
+$conv_alpha = 4         # conv alpha | 類似於 network_alpha，可以採用與 conv_dim 一致或者更小的值
 
 
 # ============= DO NOT MODIFY CONTENTS BELOW | 請勿修改下方內容 =====================
@@ -71,6 +76,13 @@ if ($use_lion) {
 
 if ($persistent_data_loader_workers) {
   [void]$ext_args.Add("--persistent_data_loader_workers")
+}
+
+if ($enable_locon_train) {
+  $network_module = "locon.locon_kohya"
+  [void]$ext_args.Add("--network_args")
+  [void]$ext_args.Add("conv_dim=$conv_dim")
+  [void]$ext_args.Add("conv_alpha=$conv_alpha")
 }
 
 # run train

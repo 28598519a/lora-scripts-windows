@@ -29,8 +29,8 @@ https://github.com/Akegarasu/lora-scripts
 4. 對於512*512設定，每增加1張圖約需要4.8MB VRAM (圖片是否有先裁減不影響)
    - 測試
       - 7.4 min / 1000 steps on RTX4070Ti
-      - 7.9G VRAM / 32dim, 33 images (如果顯卡同時有作為螢幕輸出，則還需要另外考慮這部分的VRAM占用)
-      - 7.1G VRAM / 16 dim, 33 images
+      - 7.7G VRAM / 32dim, 30 images (如果顯卡同時有作為螢幕輸出，則還需要另外考慮這部分的VRAM占用)
+      - 7.1G VRAM / 16 dim, 30 images
    - 輸出模型的大小 (等比例，可直接計算)
       - dim128 : 144MB
       - dim32 : 36MB
