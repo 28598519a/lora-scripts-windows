@@ -55,12 +55,11 @@ https://github.com/Akegarasu/lora-scripts
    - 指定根目錄來訓練，而非Repeats_Concept資料夾
    - 如果沒有TXT Caption文件，則lora將使用概念名稱作為觸發詞(標題)進行訓練<br>
 ![](https://user-images.githubusercontent.com/33422418/222901478-6b97e7d5-6192-4bea-b6c4-8d6f38d86967.png)
-4. 供參考的分類方式
+4. 供參考的分類方式 (還在測試中)
    - 先建2個資料夾sfw、nsfw裡面的Repeats_Concept資料夾相同 (方便之後打標跟訓練)
-     - sfw: Additional tags打 角色名稱
-     - nsfw:  Additional tags打 角色名稱, nsfw
+     - Tagger: Additional tags打 角色名稱
    - nsfw/sfw資料集的4種可能的使用方式
-     - nsfw內不分類，直接以nsfw作為一個Concept跟sfw放一起訓練
+     - nsfw內不分類，直接以nsfw作為一個Concept跟sfw放一起訓練 (目前先暫時建議選這個用法)
      - sfw、nsfw直接合併一起訓練
      - 單獨訓練sfw / nsfw
      - 取20%的nsfw圖片混進sfw中訓練
