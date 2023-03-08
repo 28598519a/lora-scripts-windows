@@ -11,6 +11,8 @@ $save_every_n_epochs = 2     # save every n epochs | 每 N 個 epoch 保存一�
 $network_dim = 32            # network dim | 常用 4~128，不是越大越好
 $network_alpha = 16          # network alpha | 常用與 network_dim 相同的值或者採用較小的值，如 network_dim的一半 防止下溢。默認值為 1，使用較小的 alpha 需要提升學習率。
 $clip_skip = 2               # clip skip | 一般Anime用 2 (因為NAI)
+$noise_offset = 0            # noise offset | 在訓練中添加噪聲偏移來改良生成非常暗或者非常亮的圖像，推薦參數為0.1
+$keep_tokens = 0             # keep heading N tokens when shuffling caption tokens | 在隨機打亂 tokens 時，保留前N個不變
 $train_unet_only = 0         # train U-Net only | 僅訓練 U-Net，開啟這個會犧牲效果大幅減少顯存使用。6G顯存可以開啟
 $train_text_encoder_only = 0 # train Text Encoder only | 僅訓練 文本編碼器
 
@@ -124,6 +126,7 @@ python python/Scripts/accelerate.exe launch --num_cpu_threads_per_process=8 "./s
   --save_model_as=$save_model_as `
   --min_bucket_reso=$min_bucket_reso `
   --max_bucket_reso=$max_bucket_reso `
+  --keep_tokens=$keep_tokens `
   --xformers --shuffle_caption $ext_args
 
 Write-Output "Train finished"
