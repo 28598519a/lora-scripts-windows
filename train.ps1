@@ -15,9 +15,9 @@ $train_unet_only = 0         # train U-Net only | 僅訓練 U-Net，開啟這個
 $train_text_encoder_only = 0 # train Text Encoder only | 僅訓練 文本編碼器
 
 # Learning rate | 學習率
-$lr = "1e-4"
-$unet_lr = "1e-4"
-$text_encoder_lr = "1e-5"
+$lr = 1e-4 * $batch_size
+$unet_lr = 1e-4 * $batch_size
+$text_encoder_lr = 1e-5 * $batch_size
 $lr_scheduler = "cosine_with_restarts" # "linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup" | 學習率動態調整方式
 $lr_warmup_steps = 0                   # warmup steps | 僅在 lr_scheduler 為 constant_with_warmup 時需要填寫這個值
 $lr_restart_cycles = 1                 # cosine_with_restarts restart cycles | cosine調整重複次數，僅在 lr_scheduler 為 cosine_with_restarts 時起效。
@@ -30,11 +30,10 @@ $save_model_as = "safetensors" # model save ext | 模型保存格式 ckpt, pt, s
 $network_weights = ""               # pretrained weights for LoRA network | 若需要從已有的 LoRA 模型上繼續訓練，請填寫 LoRA 模型路徑。
 $min_bucket_reso = 256              # arb min resolution | arb 最小分辨率
 $max_bucket_reso = 1024             # arb max resolution | arb 最大分辨率
-$persistent_data_loader_workers = 0 # persistent dataloader workers | 容易爆內存，保留加載訓練集的worker，減少每個 epoch 之間的停頓
+$persistent_data_loader_workers = 0 # persistent dataloader workers | 保留加載訓練集的worker，減少每個 epoch 之間的停頓 (只差幾秒，沒必要，而且對內存需求較高)
 
 # 優化器設置
-$use_8bit_adam = 1 # use 8bit adam optimizer | 使用 8bit adam 優化器節省顯存，默認啟用。部分 10 系老顯卡無法使用，修改為 0 禁用。
-$use_lion = 0      # use lion optimizer | 使用 Lion 優化器。不推薦
+$optimizer_type = "AdamW8bit" # "AdamW8bit", "Lion", "DAdaptation" | AdamW8bit : 8bit adam 優化器節省顯存，默認這個。部分 10 系老顯卡無法使用
 
 # LoCon 訓練設置 (目前不建議使用)
 $enable_locon_train = 0 # enable LoCon train | 啟用 LoCon 訓練 (Full Net LoRA)。啟用後 network_dim 和 network_alpha 應當選擇較小的值，比如 2~16
@@ -66,12 +65,20 @@ if ($reg_data_dir) {
   [void]$ext_args.Add("--reg_data_dir=" + $reg_data_dir)
 }
 
-if ($use_8bit_adam) {
+if ($optimizer_type -ieq "AdamW8bit") {
   [void]$ext_args.Add("--use_8bit_adam")
 }
 
-if ($use_lion) {
+if ($optimizer_type -ieq "Lion") {
   [void]$ext_args.Add("--use_lion_optimizer")
+}
+
+if ($optimizer_type -ieq "DAdaptation") {
+  [void]$ext_args.Add("--optimizer_type=" + $optimizer_type)
+  [void]$ext_args.Add("--optimizer_args=`"decouple=True`"")
+  $lr = 1
+  $unet_lr = 1
+  $text_encoder_lr = 0.5
 }
 
 if ($persistent_data_loader_workers) {
