@@ -35,8 +35,9 @@ https://github.com/Akegarasu/lora-scripts
       - dim128 : 144MB
       - dim32 : 36MB
       - dim8 : 9MB
-5. epoch*repeats = 約200，但具體情況看訓練的loss，只要loss的曲線方向仍然向下都還可以繼續訓練
+5. epoch*repeats ≈ 100~200，具體情況看訓練的loss跟出圖測試，只要loss的曲線方向仍然向下都還可以試著繼續訓練
    - 根據訓練其他DeepLearning模型的經驗，train的loss進入抖動期前，vaild的loss會先向上，也就是overfitting會先發生，不過對於lora任務來說稍微overfitting其實是好事
+   - 要強調的一點是，loss不是越低越好，loss跟fitting沒有絕對關係，可能loss低結果underfitting，也可能overfitting (通常是overfitting，除非用了正則化之類的方法)，最終還是要靠觸發詞、model權重出圖測試，用肉眼判斷為準
    - Repeats看圖片數量決定，通常是5~8，對於圖片數量少的可能要設高一點，另外多個Concept的話要考慮Repeats*ImageNum的平衡性及主次問題
 
 ## Training Data
@@ -49,13 +50,13 @@ https://github.com/Akegarasu/lora-scripts
       - Tag間的自動關聯
       - Tag對自己的樣式學習
       - Tag對剩餘元素的學習
-2. 訓練上通常有4種作法
+2. 訓練上通常有5種作法
    - 單Concept
       1. 利用Concept作為觸發詞 (角色名稱)，不放任何txt (效果等同只在txt中打1個Tag並作為觸發詞)。該Concept內的所有圖的元素會試圖被總結為該Concept，通常如果只是想產生固定服裝樣式的某個角色，這樣做已經很有效果
       2. 利用Concept作為觸發詞 (角色名稱) ，txt直接用tagger完成打標。那個Concept底下所有的概念跟tag會被學進Concept中以最多的那幾個tag呈現出來。而那些txt中的tag也會是觸發詞，輸入到那些詞的時候，對像是換衣服或動作等應該有用 (要訓練到所有tag都成為觸發詞)
    - 多Concept
       1. 利用Concept作為觸發詞 (類別名稱)，txt直接用tagger完成打標 (可以不打角色名稱)
-      2. 部分Concept作為觸發詞 (類別名稱)，txt直接用tagger完成打標 (可以不打角色名稱)，然後用白名單的方式，只保留觸發詞+一些角度、姿勢描述，其他砍光 (算是下面第4種方式的簡化版，必需要--keep_tokens)
+      2. 部分Concept作為觸發詞 (類別名稱)，txt直接用tagger完成打標 (可以不打角色名稱)，然後用白名單的方式，只保留觸發詞+一些角度、姿勢描述，其他砍光 (算是下面第5種方式的簡化版，必需要--keep_tokens)
       3. Concept僅做分類，隨便取個不會被打出來的詞。再來透過在txt中打進特定的Tag做為觸發詞 [角色名稱 (類別名稱)] (ex: King George V (uniform))，同時用Tagger Editor刪掉與我們目標觸發詞相關描述的所有Tag，讓那些被刪除的Tag及沒打上的Tag的概念被學進觸發詞中 (必需要--keep_tokens)
 3. 訓練資料的品質決定上限，注意訓練資料的品質，其次才是數量 (保質爭量)
    - 如果想還原特定畫風的人物，那最好少用一些其他畫風的該人物圖
