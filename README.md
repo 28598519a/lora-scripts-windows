@@ -37,7 +37,7 @@ https://github.com/Akegarasu/lora-scripts
       - dim8 : 9MB
 5. epoch*repeats ≈ 100~200，具體情況看訓練的loss跟出圖測試，只要loss的曲線方向仍然向下都還可以試著繼續訓練
    - 根據訓練其他DeepLearning模型的經驗，train的loss進入抖動期前，vaild的loss會先向上，也就是overfitting會先發生，不過對於lora任務來說稍微overfitting其實是好事
-   - 要強調的一點是，loss不是越低越好，loss跟fitting沒有絕對關係，可能loss低結果underfitting，也可能overfitting (通常是overfitting，除非用了正則化之類的方法)，最終還是要靠觸發詞、model權重出圖測試，用肉眼判斷為準 (以下面的圖舉例，結果最好的是綠色那條v19)
+   - 要強調的一點是，loss不是越低越好，loss跟fitting沒有絕對關係，可能loss低結果underfitting，也可能overfitting (通常是overfitting，除非用了正則化之類的方法)，最終還是要靠觸發詞、model權重出圖測試，用肉眼判斷為準 (以下面的圖為例，結果最好的是綠色那條v19)
    - Repeats看圖片數量決定，通常是5~8，對於圖片數量少的可能要設高一點，另外多個Concept的話要考慮Repeats*ImageNum的平衡性及主次問題
    - 在目前使用lr * sqrt(batchsize)的情況下建議epoch*repeats = 100
    ![](https://user-images.githubusercontent.com/33422418/224232520-89815474-0bfb-4b84-8f10-8bdae35692b4.png)
