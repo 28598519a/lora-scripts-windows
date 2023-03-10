@@ -17,9 +17,9 @@ $train_unet_only = 0         # train U-Net only | 僅訓練 U-Net，開啟這個
 $train_text_encoder_only = 0 # train Text Encoder only | 僅訓練 文本編碼器
 
 # Learning rate | 學習率
-$lr = 1e-4 * $batch_size
-$unet_lr = 1e-4 * $batch_size
-$text_encoder_lr = 1e-5 * $batch_size
+$lr = 1e-4 * [Math]::round([Math]::sqrt($batch_size),4)
+$unet_lr = 1e-4 * [Math]::round([Math]::sqrt($batch_size),4)
+$text_encoder_lr = 1e-5 * [Math]::round([Math]::sqrt($batch_size),4)
 $lr_scheduler = "cosine_with_restarts" # "linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup" | 學習率動態調整方式
 $lr_warmup_steps = 0                   # warmup steps | 僅在 lr_scheduler 為 constant_with_warmup 時需要填寫這個值
 $lr_restart_cycles = 1                 # cosine_with_restarts restart cycles | cosine調整重複次數，僅在 lr_scheduler 為 cosine_with_restarts 時起效。
