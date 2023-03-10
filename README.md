@@ -20,7 +20,7 @@ https://github.com/Akegarasu/lora-scripts
       - 主模型選擇Full或是Pruned都可以，但是結果應該差不多 (考慮到VRAM問題，建議選擇Pruned)
    2. train_data_dir
       - 通過指定enable_bucket參數，kohya-ss/sd-scripts會自動把圖片分類至各種min/max_bucket_reso間的解析度訓練，所以不自己先裁減好圖片也可以 (不確定這樣品質如何，也許訓練結果較好也說不定)
-      - Repeats_Concept，這個Concept會作為主觸發詞，圖片放裡面
+      - Repeats_Concept，這個Concept會作為主觸發詞，圖片放裡面 (網路上有些教學會說這在有txt的情況下是不起觸發作用的，但實際上是會的)
       - Repeats_Concept : \<number>\_\<name>
         - ex: 5\_A\_B C，則5會是每個epoch的圖片重複次數，A B會是主觸發詞 (ex: 4_Kamisato_Ayaka)
         - 一般是這樣做 \<number>\_\<name> \<class>，name是類別或角色名稱 (空格要用_替換)，class是用在reg (正則化圖片)用的大類 (ex: 6_miku 1girl, 5_bikini swimsuit)
@@ -48,7 +48,8 @@ https://github.com/Akegarasu/lora-scripts
       - Tag會學到自己的樣式 + 剩下的元素 + 與另外3個Tag的關係
       - 每一輪的這4個Tag之間會產生一定的關聯性 (過度關聯則會導致觸發詞融合；同時Tag不能亂加，否則產生關聯後結果不一定是好的)
    2. 當txt的Tag中有主模型識別不出來的Tag，則因為少學了自己，這就有了把剩下元素學進這個Tag的感覺
-   3. 瞭解了上面說明LoRA的學習特性為基礎後，就可以用來設計訓練方式，基本上可以總結為以下幾個機制
+   3. LoRA學到的那些Tag，若之後用來跑圖的主模型也有這個Tag，那LoRA會透過跟主模型的這個Tag合併的方式來起作用 (因此要注意Tag污染的風險，這也是某些訓練做法會要求刪除Tag的部分原因)
+   4. 瞭解了上面說明LoRA的學習特性為基礎後，就可以用來設計訓練方式，基本上可以總結為以下幾個機制
       - Tag間的自動關聯
       - Tag對自己的樣式學習
       - Tag對剩餘元素的學習
@@ -78,8 +79,9 @@ https://github.com/Akegarasu/lora-scripts
    - nsfw/sfw資料集的3種可能的使用方式
      - nsfw內sex取出為一類，其餘皆為nsfw類，這2個Concept跟sfw的其他Concept放一起訓練 (目前先暫時建議選這個用法)
      - 單獨訓練sfw / nsfw
-     - 取sfw 10~20%占比數量的nsfw圖片與sfw放在相同Concept中訓練 (因為nsfw占比太高的話，輸出圖片的布料會缺塊)
-   - 如果要排除不放入訓練資料時的優先順序: text > multiple > background > sex<br>
+     - 取sfw 10~20%占比數量的nsfw圖片與sfw放在相同Concept中訓練 (因為nsfw占比太高的話，輸出圖片的布料可能會少)
+   - 對於text類別，好抹的就用小畫家用附近的顏色把字大概抹一抹後，分到原本的類別去就行，不好抹的就留著沒關係，通常Tagger是會自動把text, user name等Tag打出來的，除非text圖的比例太高 (把repeats設低點調整一下就好)，不然通常不影響訓練結果
+   - 對於背景摳圖的問題，這個圖片少的話建議用小畫家抹一抹大概摳一下，圖片多的話不摳基本上不影響 (注意一下background類別就好)，如果有摳圖的話可能要打個simple background之類的tag上去<br>
 ![](https://user-images.githubusercontent.com/33422418/222903603-9341423d-1750-4baa-bc68-ad05e51b4b6f.png)
 
 ## Tagger
