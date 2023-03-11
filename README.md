@@ -18,7 +18,7 @@ https://github.com/Akegarasu/lora-scripts
    1. pretrained_model
       - 應該重要的是主模型能理解Tag就好，至於主模型本身是什麼畫風可能不太重要
       - 主模型選擇的優先順序:
-         - Novel AI > AnythingV3.0 > AnythingV4.5 (Purned > Full)
+         - Novel AI > AnythingV3.0 > AnythingV4.5 (Purned ≥ Full)
          - Full或是Pruned結果其實很接近 (VRAM占用也相同)
          - 推測Mix越多的模型越容易overfitting，原因不明
    2. train_data_dir
