@@ -17,7 +17,10 @@ https://github.com/Akegarasu/lora-scripts
 2. 需要放好
    1. pretrained_model
       - 應該重要的是主模型能理解Tag就好，至於主模型本身是什麼畫風可能不太重要
-      - 主模型選擇Full或是Pruned都可以，但是結果應該差不多 (考慮到VRAM問題，建議選擇Pruned)
+      - 主模型選擇的優先順序:
+         - Novel AI > AnythingV3.0 > AnythingV4.5 (Purned > Full)
+         - Full或是Pruned結果其實很接近 (VRAM占用也相同)
+         - 推測Mix越多的模型越容易overfitting，原因不明
    2. train_data_dir
       - 通過指定enable_bucket參數，kohya-ss/sd-scripts會自動把圖片分類至各種min/max_bucket_reso間的解析度訓練，所以不自己先裁減好圖片也可以 (不確定這樣品質如何，也許訓練結果較好也說不定)
       - Repeats_Concept，這個Concept會作為主觸發詞，圖片放裡面 (網路上有些教學會說這在有txt的情況下是不起觸發作用的，但實際上是會的)
