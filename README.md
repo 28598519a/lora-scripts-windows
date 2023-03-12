@@ -56,7 +56,7 @@ https://github.com/Akegarasu/lora-scripts
       - Tag間的自動關聯
       - Tag對自己的樣式學習
       - Tag對剩餘元素的學習
-2. 訓練上通常有5種作法
+2. 訓練上通常有5種作法 (這部分其實不太確定，但供參考)
    - 單Concept
       1. 利用Concept作為觸發詞 (角色名稱)，不放任何txt (效果等同只在txt中打1個Tag並作為觸發詞)。該Concept內的所有圖的元素會試圖被總結為該Concept，通常如果只是想產生固定服裝樣式的某個角色，這樣做已經很有效果
       2. 利用Concept作為觸發詞 (角色名稱) ，txt直接用tagger完成打標。那個Concept底下所有的概念跟tag會被學進Concept中以最多的那幾個tag呈現出來。而那些txt中的tag也會是觸發詞，輸入到那些詞的時候，對像是換衣服或動作等應該有用 (要訓練到所有tag都成為觸發詞)
@@ -76,7 +76,7 @@ https://github.com/Akegarasu/lora-scripts
    - 指定根目錄來訓練，而非Repeats_Concept資料夾
    - 如果沒有TXT Caption文件，則lora將使用概念名稱作為觸發詞(標題)進行訓練<br>
 ![](https://user-images.githubusercontent.com/33422418/222901478-6b97e7d5-6192-4bea-b6c4-8d6f38d86967.png)
-5. 供參考的分類方式 (還在測試中)
+5. 供參考的分類方式
    - 先建2個資料夾sfw、nsfw，內部的分類用子資料夾應該差不多 (方便之後選擇訓練資料跟打標)
      - Tagger: Additional tags打 角色名稱 (或是觸發詞)
    - nsfw/sfw資料集的3種可能的使用方式
