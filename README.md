@@ -38,10 +38,10 @@ https://github.com/Akegarasu/lora-scripts
       - dim128 : 144MB
       - dim32 : 36MB
       - dim8 : 9MB
-5. epoch*repeats ≈ 100~200 (建議從100開始)，具體情況看訓練的loss跟出圖測試，只要loss的曲線方向仍然向下都還可以試著繼續訓練
+5. epoch*repeats ≈ 100，具體情況看訓練的loss跟出圖測試，只要loss的曲線方向仍然向下都還可以試著繼續訓練
    - 根據訓練其他DeepLearning模型的經驗，train的loss進入抖動期前，vaild的loss會先向上，也就是overfitting會先發生，不過對於lora任務來說稍微overfitting其實是好事
    - 要強調的一點是，loss不是越低越好，loss跟fitting沒有絕對關係，可能loss低結果underfitting，也可能overfitting (通常是overfitting，除非用了正則化之類的方法)，最終還是要靠觸發詞、model權重出圖測試，用肉眼判斷為準 (以下面的圖為例，結果最好的是綠色那條v19)
-   - Repeats看圖片數量決定，通常是5~8，對於圖片數量少的可能要設高一點，另外多個Concept的話要考慮Repeats*ImageNum的平衡性及主次問題
+   - Repeats看圖片數量決定，通常是5~8，對於圖片數量少的可能要設高一點 (但要考慮overfitting的問題)，另外多個Concept的話要考慮Repeats*ImageNum的平衡性及主次問題
    ![](https://user-images.githubusercontent.com/33422418/224232520-89815474-0bfb-4b84-8f10-8bdae35692b4.png)
 
 ## Training Data
@@ -55,19 +55,43 @@ https://github.com/Akegarasu/lora-scripts
       - Tag間的自動關聯
       - Tag對自己的樣式學習
       - Tag對剩餘元素的學習
-2. 訓練上通常有5種作法 (這部分其實不太確定，但供參考)
-   - 單Concept
-      1. 利用Concept作為觸發詞 (角色名稱)，不放任何txt (效果等同只在txt中打1個Tag並作為觸發詞)。該Concept內的所有圖的元素會試圖被總結為該Concept，通常如果只是想產生固定服裝樣式的某個角色，這樣做已經很有效果
-      2. 利用Concept作為觸發詞 (角色名稱) ，txt直接用tagger完成打標。那個Concept底下所有的概念跟tag會被學進Concept中以最多的那幾個tag呈現出來。而那些txt中的tag也會是觸發詞，輸入到那些詞的時候，對像是換衣服或動作等應該有用 (要訓練到所有tag都成為觸發詞)
-   - 多Concept
-      1. 利用Concept作為觸發詞 (類別名稱)，txt直接用tagger完成打標 (可以不打角色名稱)
-      2. 部分Concept作為觸發詞 (類別名稱)，txt直接用tagger完成打標 (可以不打角色名稱)，然後用白名單的方式，只保留觸發詞+一些角度、姿勢描述，其他砍光 (算是下面第5種方式的簡化版，必需要--keep_tokens)
-      3. Concept僅做分類，隨便取個不會被打出來的詞。再來透過在txt中打進特定的Tag做為觸發詞 [角色名稱 (類別名稱)] (ex: King George V (uniform))，同時用Tagger Editor刪掉與我們目標觸發詞相關描述的所有Tag，讓那些被刪除的Tag及沒打上的Tag的概念被學進觸發詞中 (必需要--keep_tokens)
-3. 訓練資料的品質決定上限，注意訓練資料的品質，其次才是數量 (保質爭量)
+2. 訓練上通常有幾種作法
+   - Folder
+      - Repeats_Concept (ex: 5_角色名稱)
+         1. Concept內的所有圖的元素會試圖被總結為該Concept (觸發詞)
+         2. 如果Concept也有角色名稱，訓練結果有可能會比較穩定
+      - Repeats_Concept_Class (ex: 5_角色名稱_類別)
+         1. 類別名稱不影響，只是方便區分
+         2. 對於是否有將相同類別的圖分Concept放，效果不確定
+   - txt
+      - 打全標
+         1. txt開頭要打進觸發詞
+         2. 常用這個，方便，也比較不會overfitting (如果不是選全標，epoch*repeats要低一點)
+         3. 角色調用可能會需要打比較多Prompt，但通常是還好，畢竟有Tag自動關聯
+      - 刪標 (必需要--keep_tokens)
+         1. 一種是只刪角色特徵 (沒刪全也還好，當全標簡化版看待就好)
+         2. 另一種是只留觸發詞+下面列的那些保留類型的詞 (設白名單後一鍵刪除處理)
+         3. 如果刪了下面寫的選擇保留的Tag，那觸發詞就要做對應的處理，像是[角色名稱 (類別名稱)] (ex: King George V (uniform)))
+      - 不打標 (無txt)
+         1. 等於用Concept名稱訓練，效果等同只在txt中打1個Tag並作為觸發詞
+         2. 如果只是想產生固定服裝樣式的某個角色，這樣做已經很有效果
+3. 關於刪Tag
+   - 刪除的Tag
+      - 角色基本特徵 (blonde hair、breasts、twintails、xxx eyes)
+   - 選擇保留的Tag
+      - 服裝 (uniform、miniskirt、swimsuit、hat、pantyhose、xxx clothes)
+   - 保留的Tag (即使下面沒列的類型也不能刪，能刪的只有上面2種)
+      - 人物數量 (1girl、solo、2girls、multiple girls)
+      - 動作 (standing、sitting、lying、holding、arms up)
+      - 視角 (looking at xxx)
+      - 表情 (smile、tsurime)
+      - 背景 (indoors、night、snow、chair、simple background、white background)
+      - 圖片類型 (full body、upper body、close up)
+4. 訓練資料的品質決定上限，注意訓練資料的品質，其次才是數量 (保質爭量)
    - 如果想還原特定畫風的人物，那最好少用一些其他畫風的該人物圖
    - 人物的正側面、衣飾、局部細節甚至特殊部位都能學會，如果要盡力還原，那麼需要有一些各種地方的細節圖片，但是佔比不能太大
    - 沒標註出來的Tag會被LoRA學進那張圖的其他Tag中 (像是背景如果沒Tagger相關Tag，那之後訓練出來的模型，可能就會在沒加相關Prompt的情況下生出這個背景)
-4. LoRA訓練輸入目錄
+5. LoRA訓練輸入目錄
    - 你可以有一個概念子文件夾或10個，但你必須至少有一個
    - 概念文件夾遵循以下格式:\<number>\_\<name>
       - \<number>決定了您的訓練腳本將在該文件夾上重複執行的次數
@@ -75,14 +99,14 @@ https://github.com/Akegarasu/lora-scripts
    - 指定根目錄來訓練，而非Repeats_Concept資料夾
    - 如果沒有TXT Caption文件，則lora將使用概念名稱作為觸發詞(標題)進行訓練<br>
 ![](https://user-images.githubusercontent.com/33422418/222901478-6b97e7d5-6192-4bea-b6c4-8d6f38d86967.png)
-5. 供參考的分類方式
+6. 供參考的分類方式
    - 先建2個資料夾sfw、nsfw，內部的分類用子資料夾應該差不多 (方便之後選擇訓練資料跟打標)
      - Tagger: Additional tags打 角色名稱 (或是觸發詞)
    - nsfw/sfw資料集的3種可能的使用方式
      - nsfw內sex取出為一類，其餘皆為nsfw類，這2個Concept跟sfw的其他Concept放一起訓練 (目前先暫時建議選這個用法)
      - 單獨訓練sfw / nsfw
      - 取sfw 10~20%占比數量的nsfw圖片與sfw放在相同Concept中訓練 (因為nsfw占比太高的話，輸出圖片的布料可能會少)
-   - 對於text類別，好抹的就用小畫家用附近的顏色把字大概抹一抹後，分到原本的類別去就行，不好抹的就留著沒關係，通常Tagger是會自動把text, user name等Tag打出來的，除非text圖的比例太高 (把repeats設低點調整一下就好)，不然通常不影響訓練結果
+     - 對於text類別，好抹的就用小畫家用附近的顏色把字大概抹一抹後，分到原本的類別去就行，不好抹的字少的話就打artist name、twitter username、signature這些tag上去後留著沒關係，字太多的話建議刪掉
    - 對於背景摳圖的問題，這個圖片少的話建議用小畫家抹一抹大概摳一下，圖片多的話不摳基本上不影響 (注意一下background類別就好)，如果有摳圖的話可能要打個simple background之類的tag上去<br>
 ![](https://user-images.githubusercontent.com/33422418/222903603-9341423d-1750-4baa-bc68-ad05e51b4b6f.png)
 
