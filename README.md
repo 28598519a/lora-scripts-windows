@@ -38,10 +38,11 @@ https://github.com/Akegarasu/lora-scripts
       - dim128 : 144MB
       - dim32 : 36MB
       - dim8 : 9MB
-5. epoch*repeats ≈ 100，具體情況看訓練的loss跟出圖測試，只要loss的曲線方向仍然向下都還可以試著繼續訓練
+5. epoch*repeats ≈ 50 ~ 100，具體情況看訓練的loss跟出圖測試，只要loss的曲線方向仍然向下都還可以試著繼續訓練
    - 根據訓練其他DeepLearning模型的經驗，train的loss進入抖動期前，vaild的loss會先向上，也就是overfitting會先發生，不過對於lora任務來說稍微overfitting其實是好事
-   - 要強調的一點是，loss不是越低越好，loss跟fitting沒有絕對關係，可能loss低結果underfitting，也可能overfitting (通常是overfitting，除非用了正則化之類的方法)，最終還是要靠觸發詞、model權重出圖測試，用肉眼判斷為準 (以下面的圖為例，結果最好的是綠色那條v19)
    - Repeats看圖片數量決定，通常是5~8，對於圖片數量少的可能要設高一點 (但要考慮overfitting的問題)，另外多個Concept的話要考慮Repeats*ImageNum的平衡性及主次問題
+   - Overfitting後，通常是手會先出問題，再來是身體的曲線、肢體數量，最後是背景、雜訊噪點 (但是通常最佳輸出會出現在手出問題後)
+   - 要強調的一點是，loss不是越低越好，loss跟fitting沒有絕對關係，可能loss低結果underfitting，也可能overfitting (通常是overfitting，除非用了正則化之類的方法)，最終還是要靠觸發詞、model權重出圖測試，用肉眼判斷為準 (以下面的圖為例，結果最好的是綠色那條v19)<br>
    ![](https://user-images.githubusercontent.com/33422418/224232520-89815474-0bfb-4b84-8f10-8bdae35692b4.png)
 
 ## Training Data
@@ -68,7 +69,7 @@ https://github.com/Akegarasu/lora-scripts
          1. txt開頭要打進觸發詞
          2. 常用這個，方便，也比較不會overfitting (如果不是選全標，epoch*repeats要低一點)
          3. 角色調用可能會需要打比較多Prompt，但通常是還好，畢竟有Tag自動關聯
-      - 刪標 (必需要--keep_tokens)
+      - 刪標 (b、c必需要--keep_tokens)
          1. 一種是只刪角色特徵 (沒刪全也還好，當全標簡化版看待就好)
          2. 另一種是只留觸發詞+下面列的那些保留類型的詞 (設白名單後一鍵刪除處理)
          3. 如果刪了下面寫的選擇保留的Tag，那觸發詞就要做對應的處理，像是[角色名稱 (類別名稱)] (ex: King George V (uniform)))
