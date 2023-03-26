@@ -103,13 +103,16 @@ https://github.com/Akegarasu/lora-scripts
 6. 供參考的分類方式
    - 先建2個資料夾sfw、nsfw，內部的分類用子資料夾應該差不多 (方便之後選擇訓練資料跟打標)
      - Tagger: Additional tags打 角色名稱 (或是觸發詞)
+     <br>![](https://user-images.githubusercontent.com/33422418/222903603-9341423d-1750-4baa-bc68-ad05e51b4b6f.png)
    - nsfw/sfw資料集的3種可能的使用方式
      - nsfw內sex取出為一類，其餘皆為nsfw類，這2個Concept跟sfw的其他Concept放一起訓練 (目前先暫時建議選這個用法)
      - 單獨訓練sfw / nsfw
      - 取sfw 10~20%占比數量的nsfw圖片與sfw放在相同Concept中訓練 (因為nsfw占比太高的話，輸出圖片的布料可能會少)
      - 對於text類別，好抹的就用小畫家用附近的顏色把字大概抹一抹後，分到原本的類別去就行，不好抹的字少的話就打artist name、twitter username、signature這些tag上去後留著沒關係，字太多的話建議刪掉
-   - 對於背景摳圖的問題，這個圖片少的話建議用小畫家抹一抹大概摳一下，圖片多的話不摳基本上不影響 (注意一下background類別就好)，如果有摳圖的話可能要打個simple background之類的tag上去<br>
-![](https://user-images.githubusercontent.com/33422418/222903603-9341423d-1750-4baa-bc68-ad05e51b4b6f.png)
+   - 對於背景摳圖的問題，這個圖片少的話建議用小畫家抹一抹大概摳一下，圖片多的話不摳影響較小 (注意一下background類別就好)，如果有摳圖的話可能要打個simple background之類的tag上去
+     - 這裡我提供一種不摳圖、不抹圖思路 (只是思路，沒實際測試過):
+       1. 對背景非單色的訓練圖片裁減出角色部分丟training folder，原圖丟到對應的reg folder (如此就可以分離角色跟背景，甚至LoRA可以藉此學到角色跟背景的位置關係)
+       2. 如果訓練素材足夠的情況下，訓練出第一版後，negative prompt填white background、simple background生成角色帶背景的圖 (甚至可以搞點別的，像是text之類的)，丟reg folder (如果用於生成的LoRA效果其實已經不錯，可以採類似第1點的方案，同樣裁一份到training folder擴充訓練資料)
 
 ## Tagger
 建議使用WD14 Tagger而非DeepDanbooru<br>
