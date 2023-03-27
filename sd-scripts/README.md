@@ -127,104 +127,98 @@ The majority of scripts is licensed under ASL 2.0 (including codes from Diffuser
 
 ## Change History
 
-- 11 Mar. 2023, 2023/3/11:
-    - Fix `svd_merge_lora.py` causes an error about the device.
-    - `svd_merge_lora.py` でデバイス関連のエラーが発生する不具合を修正しました。
-- 10 Mar. 2023, 2023/3/10: release v0.5.1
-  - Fix to LoRA modules in the model are same to the previous (before 0.5.0) if Conv2d-3x3 is disabled (no `conv_dim` arg, default).
-    - Conv2D with kernel size 1x1 in ResNet modules were accidentally included in v0.5.0.
-    - Trained models with v0.5.0 will work with Web UI's built-in LoRA and Additional Networks extension.
-  - Fix an issue that dim (rank) of LoRA module is limited to the in/out dimensions of the target Linear/Conv2d (in case of the dim > 320).
-  - `resize_lora.py` now have a feature to `dynamic resizing` which means each LoRA module can have different ranks (dims). Thanks to mgz-dev for this great work!
-    - The appropriate rank is selected based on the complexity of each module with an algorithm specified in the command line arguments. For details: https://github.com/kohya-ss/sd-scripts/pull/243
-  - Multiple GPUs training is finally supported in `train_network.py`. Thanks to ddPn08 to solve this long running issue!
-  - Dataset with fine-tuning method (with metadata json) now works without images if `.npz` files exist. Thanks to rvhfxb!
-  - `train_network.py` can work if the current directory is not the directory where the script is in. Thanks to mio2333!
-  - Fix `extract_lora_from_models.py` and `svd_merge_lora.py` doesn't work with higher rank (>320).
+- 27 Mar. 2023, 2023/3/27:
+  - Fix issues when `--persistent_data_loader_workers` is specified.
+    - The batch members of the bucket are not shuffled.
+    - `--caption_dropout_every_n_epochs` does not work.
+    - These issues occurred because the epoch transition was not recognized correctly. Thanks to u-haru for reporting the issue.
+  - Fix an issue that images are loaded twice in Windows environment.
+  - Add Min-SNR Weighting strategy. Details are in [#308](https://github.com/kohya-ss/sd-scripts/pull/308). Thank you to AI-Casanova for this great work!
+    - Add `--min_snr_gamma` option to training scripts, 5 is recommended by paper.
 
-  - LoRAのConv2d-3x3拡張を行わない場合（`conv_dim` を指定しない場合）、以前（v0.5.0）と同じ構成になるよう修正しました。
-    - ResNetのカーネルサイズ1x1のConv2dが誤って対象になっていました。
-    - ただv0.5.0で学習したモデルは Additional Networks 拡張、およびWeb UIのLoRA機能で問題なく使えると思われます。
-  - LoRAモジュールの dim (rank) が、対象モジュールの次元数以下に制限される不具合を修正しました（320より大きい dim を指定した場合）。
-  - `resize_lora.py` に `dynamic resizing` （リサイズ後の各LoRAモジュールが異なるrank (dim) を持てる機能）を追加しました。mgz-dev 氏の貢献に感謝します。
-    - 適切なランクがコマンドライン引数で指定したアルゴリズムにより自動的に選択されます。詳細はこちらをご覧ください: https://github.com/kohya-ss/sd-scripts/pull/243
-  - `train_network.py` でマルチGPU学習をサポートしました。長年の懸案を解決された ddPn08 氏に感謝します。
-  - fine-tuning方式のデータセット（メタデータ.jsonファイルを使うデータセット）で `.npz` が存在するときには画像がなくても動作するようになりました。rvhfxb 氏に感謝します。
-  - 他のディレクトリから `train_network.py` を呼び出しても動作するよう変更しました。 mio2333 氏に感謝します。
-  - `extract_lora_from_models.py` および `svd_merge_lora.py` が320より大きいrankを指定すると動かない不具合を修正しました。
-  
-- 9 Mar. 2023, 2023/3/9: release v0.5.0
-  - There may be problems due to major changes. If you cannot revert back to the previous version when problems occur, please do not update for a while.
-  - Minimum metadata (module name, dim, alpha and network_args) is recorded even with `--no_metadata`, issue https://github.com/kohya-ss/sd-scripts/issues/254
-  - `train_network.py` supports LoRA for Conv2d-3x3 (extended to conv2d with a kernel size not 1x1).
-    - Same as a current version of [LoCon](https://github.com/KohakuBlueleaf/LoCon). __Thank you very much KohakuBlueleaf for your help!__
-      - LoCon will be enhanced in the future. Compatibility for future versions is not guaranteed.
-    - Specify `--network_args` option like: `--network_args "conv_dim=4" "conv_alpha=1"`
-    - [Additional Networks extension](https://github.com/kohya-ss/sd-webui-additional-networks) version 0.5.0 or later is required to use 'LoRA for Conv2d-3x3' in Stable Diffusion web UI.
-    - __Stable Diffusion web UI built-in LoRA does not support 'LoRA for Conv2d-3x3' now. Consider carefully whether or not to use it.__
-  - Merging/extracting scripts also support LoRA for Conv2d-3x3.
-  - Free CUDA memory after sample generation to reduce VRAM usage, issue https://github.com/kohya-ss/sd-scripts/issues/260 
-  - Empty caption doesn't cause error now, issue https://github.com/kohya-ss/sd-scripts/issues/258
-  - Fix sample generation is crashing in Textual Inversion training when using templates, or if height/width is not divisible by 8.
-  - Update documents (Japanese only).
+  - Add tag warmup. Details are in [#322](https://github.com/kohya-ss/sd-scripts/pull/322). Thanks to u-haru!
+    - Add `token_warmup_min` and `token_warmup_step` to dataset settings.
+    - Gradually increase the number of tokens from `token_warmup_min` to `token_warmup_step`.
+    - For example, if `token_warmup_min` is `3` and `token_warmup_step` is `10`, the first step will use the first 3 tokens, and the 10th step will use all tokens.
+  - Fix a bug in `resize_lora.py`. Thanks to mgz-dev! [#328](https://github.com/kohya-ss/sd-scripts/pull/328)  
+  - Add `--debug_dataset` option to step to the next step with `S` key and to the next epoch with `E` key.
+  - Fix other bugs.
 
-  - 大きく変更したため不具合があるかもしれません。問題が起きた時にスクリプトを前のバージョンに戻せない場合は、しばらく更新を控えてください。
-  - 最低限のメタデータ（module name, dim, alpha および network_args）が `--no_metadata` オプション指定時にも記録されます。issue https://github.com/kohya-ss/sd-scripts/issues/254
-  - `train_network.py` で LoRAの Conv2d-3x3 拡張に対応しました（カーネルサイズ1x1以外のConv2dにも対象範囲を拡大します）。
-    - 現在のバージョンの [LoCon](https://github.com/KohakuBlueleaf/LoCon) と同一の仕様です。__KohakuBlueleaf氏のご支援に深く感謝します。__
-      - LoCon が将来的に拡張された場合、それらのバージョンでの互換性は保証できません。
-    - `--network_args` オプションを `--network_args "conv_dim=4" "conv_alpha=1"` のように指定してください。
-    - Stable Diffusion web UI での使用には [Additional Networks extension](https://github.com/kohya-ss/sd-webui-additional-networks) のversion 0.5.0 以降が必要です。
-    - __Stable Diffusion web UI の LoRA 機能は LoRAの Conv2d-3x3 拡張に対応していないようです。使用するか否か慎重にご検討ください。__
-  - マージ、抽出のスクリプトについても LoRA の Conv2d-3x3 拡張に対応しました.
-  - サンプル画像生成後にCUDAメモリを解放しVRAM使用量を削減しました。 issue https://github.com/kohya-ss/sd-scripts/issues/260 
-  - 空のキャプションが使えるようになりました。 issue https://github.com/kohya-ss/sd-scripts/issues/258
-  - Textual Inversion 学習でテンプレートを使ったとき、height/width が 8 で割り切れなかったときにサンプル画像生成がクラッシュするのを修正しました。
-  - ドキュメント類を更新しました。
+  - `--persistent_data_loader_workers` を指定した時の各種不具合を修正しました。
+    - `--caption_dropout_every_n_epochs` が効かない。
+    - バケットのバッチメンバーがシャッフルされない。
+    - エポックの遷移が正しく認識されないために発生していました。ご指摘いただいたu-haru氏に感謝します。
+  - Windows環境で画像が二重に読み込まれる不具合を修正しました。
+  - Min-SNR Weighting strategyを追加しました。 詳細は [#308](https://github.com/kohya-ss/sd-scripts/pull/308) をご参照ください。AI-Casanova氏の素晴らしい貢献に感謝します。
+    - `--min_snr_gamma` オプションを学習スクリプトに追加しました。論文では5が推奨されています。
+  - タグのウォームアップを追加しました。詳細は [#322](https://github.com/kohya-ss/sd-scripts/pull/322) をご参照ください。u-haru氏に感謝します。
+    - データセット設定に `token_warmup_min` と `token_warmup_step` を追加しました。
+    - `token_warmup_min` で指定した数のトークン（カンマ区切りの文字列）から、`token_warmup_step` で指定したステップまで、段階的にトークンを増やしていきます。
+    - たとえば `token_warmup_min`に `3` を、`token_warmup_step` に `10` を指定すると、最初のステップでは最初から3個のトークンが使われ、10ステップ目では全てのトークンが使われます。
+  - `resize_lora.py` の不具合を修正しました。mgz-dev氏に感謝します。[#328](https://github.com/kohya-ss/sd-scripts/pull/328)  
+  - `--debug_dataset` オプションで、`S`キーで次のステップへ、`E`キーで次のエポックへ進めるようにしました。
+  - その他の不具合を修正しました。
 
-  - Sample image generation:
-    A prompt file might look like this, for example
 
-    ```
-    # prompt 1
-    masterpiece, best quality, 1girl, in white shirts, upper body, looking at viewer, simple background --n low quality, worst quality, bad anatomy,bad composition, poor, low effort --w 768 --h 768 --d 1 --l 7.5 --s 28
+- 21 Mar. 2023, 2023/3/21:
+  - Add `--vae_batch_size` for faster latents caching to each training script. This  batches VAE calls.
+    - Please start with`2` or `4` depending on the size of VRAM.
+  - Fix a number of training steps with `--gradient_accumulation_steps` and `--max_train_epochs`. Thanks to tsukimiya!
+  - Extract parser setup to external scripts. Thanks to robertsmieja!
+  - Fix an issue without `.npz` and with `--full_path` in training.
+  - Support extensions with upper cases for images for not Windows environment.
+  - Fix `resize_lora.py` to work with LoRA with dynamic rank (including `conv_dim != network_dim`). Thanks to toshiaki!
+  - latentsのキャッシュを高速化する`--vae_batch_size` オプションを各学習スクリプトに追加しました。VAE呼び出しをバッチ化します。
+    -VRAMサイズに応じて、`2` か `4` 程度から試してください。
+  - `--gradient_accumulation_steps` と `--max_train_epochs` を指定した時、当該のepochで学習が止まらない不具合を修正しました。tsukimiya氏に感謝します。
+  - 外部のスクリプト用に引数parserの構築が関数化されました。robertsmieja氏に感謝します。
+  - 学習時、`--full_path` 指定時に `.npz` が存在しない場合の不具合を解消しました。
+  - Windows以外の環境向けに、画像ファイルの大文字の拡張子をサポートしました。
+  - `resize_lora.py` を dynamic rank （rankが各LoRAモジュールで異なる場合、`conv_dim` が `network_dim` と異なる場合も含む）の時に正しく動作しない不具合を修正しました。toshiaki氏に感謝します。
 
-    # prompt 2
-    masterpiece, best quality, 1boy, in business suit, standing at street, looking back --n low quality, worst quality, bad anatomy,bad composition, poor, low effort --w 576 --h 832 --d 2 --l 5.5 --s 40
-    ```
+## Sample image generation during training
+  A prompt file might look like this, for example
 
-    Lines beginning with `#` are comments. You can specify options for the generated image with options like `--n` after the prompt. The following can be used.
+```
+# prompt 1
+masterpiece, best quality, (1girl), in white shirts, upper body, looking at viewer, simple background --n low quality, worst quality, bad anatomy,bad composition, poor, low effort --w 768 --h 768 --d 1 --l 7.5 --s 28
 
-    * `--n` Negative prompt up to the next option.
-    * `--w` Specifies the width of the generated image.
-    * `--h` Specifies the height of the generated image.
-    * `--d` Specifies the seed of the generated image.
-    * `--l` Specifies the CFG scale of the generated image.
-    * `--s` Specifies the number of steps in the generation.
+# prompt 2
+masterpiece, best quality, 1boy, in business suit, standing at street, looking back --n (low quality, worst quality), bad anatomy,bad composition, poor, low effort --w 576 --h 832 --d 2 --l 5.5 --s 40
+```
 
-    The prompt weighting such as `( )` and `[ ]` are not working.
+  Lines beginning with `#` are comments. You can specify options for the generated image with options like `--n` after the prompt. The following can be used.
 
-  - サンプル画像生成：
-    プロンプトファイルは例えば以下のようになります。
+  * `--n` Negative prompt up to the next option.
+  * `--w` Specifies the width of the generated image.
+  * `--h` Specifies the height of the generated image.
+  * `--d` Specifies the seed of the generated image.
+  * `--l` Specifies the CFG scale of the generated image.
+  * `--s` Specifies the number of steps in the generation.
 
-    ```
-    # prompt 1
-    masterpiece, best quality, 1girl, in white shirts, upper body, looking at viewer, simple background --n low quality, worst quality, bad anatomy,bad composition, poor, low effort --w 768 --h 768 --d 1 --l 7.5 --s 28
+  The prompt weighting such as `( )` and `[ ]` are working.
 
-    # prompt 2
-    masterpiece, best quality, 1boy, in business suit, standing at street, looking back --n low quality, worst quality, bad anatomy,bad composition, poor, low effort --w 576 --h 832 --d 2 --l 5.5 --s 40
-    ```
+## サンプル画像生成
+プロンプトファイルは例えば以下のようになります。
 
-    `#` で始まる行はコメントになります。`--n` のように「ハイフン二個＋英小文字」の形でオプションを指定できます。以下が使用可能できます。
+```
+# prompt 1
+masterpiece, best quality, (1girl), in white shirts, upper body, looking at viewer, simple background --n low quality, worst quality, bad anatomy,bad composition, poor, low effort --w 768 --h 768 --d 1 --l 7.5 --s 28
 
-    * `--n` Negative prompt up to the next option.
-    * `--w` Specifies the width of the generated image.
-    * `--h` Specifies the height of the generated image.
-    * `--d` Specifies the seed of the generated image.
-    * `--l` Specifies the CFG scale of the generated image.
-    * `--s` Specifies the number of steps in the generation.
+# prompt 2
+masterpiece, best quality, 1boy, in business suit, standing at street, looking back --n (low quality, worst quality), bad anatomy,bad composition, poor, low effort --w 576 --h 832 --d 2 --l 5.5 --s 40
+```
 
-    `( )` や `[ ]` などの重みづけは動作しません。
+  `#` で始まる行はコメントになります。`--n` のように「ハイフン二個＋英小文字」の形でオプションを指定できます。以下が使用可能できます。
+
+  * `--n` Negative prompt up to the next option.
+  * `--w` Specifies the width of the generated image.
+  * `--h` Specifies the height of the generated image.
+  * `--d` Specifies the seed of the generated image.
+  * `--l` Specifies the CFG scale of the generated image.
+  * `--s` Specifies the number of steps in the generation.
+
+  `( )` や `[ ]` などの重みづけも動作します。
 
 Please read [Releases](https://github.com/kohya-ss/sd-scripts/releases) for recent updates.
 最近の更新情報は [Release](https://github.com/kohya-ss/sd-scripts/releases) をご覧ください。
