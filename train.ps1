@@ -30,25 +30,25 @@ $save_model_as = "safetensors" # model save ext | 模型保存格式 ckpt, pt, s
 
 # 其他設置
 $network_weights = ""               # pretrained weights for LoRA network | 若需要從已有的 LoRA 模型上繼續訓練，請填寫 LoRA 模型路徑。
-$min_bucket_reso = 256              # arb min resolution | arb 最小分辨率
+$min_bucket_reso = 320              # arb min resolution | arb 最小分辨率
 $max_bucket_reso = 1024             # arb max resolution | arb 最大分辨率
 $persistent_data_loader_workers = 0 # persistent dataloader workers | 保留加載訓練集的worker，減少每個 epoch 之間的停頓 (只差幾秒，沒必要，而且對內存需求較高)
 
 # 優化器設置
 $optimizer_type = "AdamW8bit" # "AdamW8bit", "Lion", "DAdaptation" | AdamW8bit : 8bit adam 優化器節省顯存，默認這個。部分 10 系老顯卡無法使用
 
-# LoCon 訓練設置 (目前不建議使用)
-$enable_locon_train = 0 # enable LoCon train | 啟用 LoCon 訓練 (Full Net LoRA)。啟用後 network_dim 和 network_alpha 應當選擇較小的值，比如 2~16
-$conv_dim = 4           # conv dim | 類似於 network_dim，推薦為 4
-$conv_alpha = 4         # conv alpha | 類似於 network_alpha，可以採用與 conv_dim 一致或者更小的值
+# LyCORIS 訓練設置 (目前不建議使用)
+$enable_lycoris_train = 0 # enable LyCORIS train | 啟用 LyCORIS 訓練 (Full Net LoRA)。啟用後 network_dim 和 network_alpha 應當選擇較小的值，比如 2~16
+$algo = "lora"            # LyCORIS network algo | LyCORIS 網絡算法。可選 lora、loha (lora即為locon)
+$conv_dim = 4             # conv dim | 類似於 network_dim，推薦為 4
+$conv_alpha = 4           # conv alpha | 類似於 network_alpha，可以採用與 conv_dim 一致或者更小的值
 
 
 # ============= DO NOT MODIFY CONTENTS BELOW | 請勿修改下方內容 =====================
-# Activate python venv
-#.\venv\Scripts\activate
+# Activate python env
 $Env:PATH = "C:\Windows\system32;.\python;.\python\Scripts"
-
 $Env:HF_HOME = "huggingface"
+$network_module = "networks.lora"
 $ext_args = [System.Collections.ArrayList]::new()
 
 if ($train_unet_only) {
@@ -87,11 +87,12 @@ if ($persistent_data_loader_workers) {
   [void]$ext_args.Add("--persistent_data_loader_workers")
 }
 
-if ($enable_locon_train) {
-  $network_module = "locon.locon_kohya"
+if ($enable_lycoris_train) {
+  $network_module = "lycoris.kohya"
   [void]$ext_args.Add("--network_args")
   [void]$ext_args.Add("conv_dim=$conv_dim")
   [void]$ext_args.Add("conv_alpha=$conv_alpha")
+  [void]$ext_args.Add("algo=$algo")
 }
 
 # run train
@@ -102,7 +103,7 @@ python python/Scripts/accelerate.exe launch --num_cpu_threads_per_process=8 "./s
   --output_dir="./output" `
   --logging_dir="./logs" `
   --resolution=$resolution `
-  --network_module=networks.lora `
+  --network_module=$network_module `
   --max_train_epochs=$max_train_epoches `
   --learning_rate=$lr `
   --unet_lr=$unet_lr `
