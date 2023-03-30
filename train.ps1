@@ -41,7 +41,7 @@ $optimizer_type = "AdamW8bit" # "AdamW8bit", "Lion", "DAdaptation" | AdamW8bit :
 $enable_lycoris_train = 0 # enable LyCORIS train | 啟用 LyCORIS 訓練 (Full Net LoRA)。啟用後 network_dim 和 network_alpha 應當選擇較小的值，比如 2~16
 $algo = "lora"            # LyCORIS network algo | LyCORIS 網絡算法。可選 lora、loha (lora即為locon)
 $conv_dim = 4             # conv dim | 類似於 network_dim，推薦為 4
-$conv_alpha = 4           # conv alpha | 類似於 network_alpha，可以採用與 conv_dim 一致或者更小的值
+$conv_alpha = 1           # conv alpha | 類似於 network_alpha，可以採用與 conv_dim 一致或者更小的值
 
 
 # ============= DO NOT MODIFY CONTENTS BELOW | 請勿修改下方內容 =====================

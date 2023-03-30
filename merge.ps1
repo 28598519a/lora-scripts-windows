@@ -21,7 +21,7 @@ if ($merge_to_sd) {
 python python/Scripts/accelerate.exe launch --num_cpu_threads_per_process=8 "./sd-scripts/networks/merge_lora.py" `
 	--save_precision=$save_precision `
 	--models=$model_1 $model_2 `
-	--ratios=$new_rank `
+	--ratios=$ratio_1 $ratio_2 `
 	--save_to=$save_to `
 	$ext_args 
 

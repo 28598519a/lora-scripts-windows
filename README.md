@@ -10,6 +10,8 @@ https://github.com/Akegarasu/lora-scripts
 ## 訓練
 將pretrained_model、train_data_dir、output_name設定好並放入對應的主模型、訓練資料後，**執行train.ps1**
 
+PS. Error caught was: No module named 'triton'忽視就好，這個是xformers 0.15新用到的套件，windows沒有，不影響訓練結果
+
 1. 需要改的參數pretrained_model、train_data_dir、output_name
    - network_dim一般32就好，不用128
    - network_alpha就0.25~0.5倍的dim值 (ex:16)
@@ -28,12 +30,22 @@ https://github.com/Akegarasu/lora-scripts
         - ex: 5\_A\_B C，則5會是每個epoch的圖片重複次數，A B會是主觸發詞 (ex: 4_Kamisato_Ayaka)
         - 一般是這樣做 \<number>\_\<name> \<class>，name是類別或角色名稱 (空格要用_替換)，class是用在reg (正則化圖片)用的大類 (ex: 6_miku 1girl, 5_bikini swimsuit)
         - 如果要學的Concept會跟某種Tag重複且指的是不同東西，那最好把Concept取個特別名字以做區分避免Tag混淆
+   3. reg_data_dir (選用)
+      - Repeats_Concept : \<number>\_\<class>
+        - number可以設低一些，一般就是設1
+        - class也是屬於關鍵詞，之後生圖的時候使用到這個關鍵詞才有用
+      - 不需要打Tag，打了也沒用
+      - reg用於泛化性
+        - 正則化常用於處理複雜數據集，避免過擬合和欠擬合問題，提高泛化性
+        - 在Training data不是很少的情況下 (低於30張)，不建議使用reg，可能會導致欠擬合，增加訓練時間也不一定能成功收斂 (尤其是訓練角色這種需要學習特別固定特徵的且很難描述出來的內容；ex: 臉型、身形，用了reg會導致訓練結果朝向reg的臉型及身形)
+      - reg用於準確性
+        - 正則化就是給機器一個參考圖片，讓它學習，因此正確使用正則化可以提高訓練準確性
+        - 用於增強training data與reg都有的特徵，而只有reg有的特徵會被分離 (即不學；ex: training data只有臉，而reg放了全身，那麼學到的就是臉部特徵及特徵應該位於全身的哪個位置，而不會學到只有臉)，這種用於特徵分離的做法也可以拿來用在訓練背景LoRA之類的
 3. seed參數用於重現結果，如果設定相同且相同seed，應該會得到非常接近的模型
-4. 對於512*512設定，每增加1張圖約需要4.8MB VRAM (圖片是否有先裁減不影響)
+4. 關於LoRA訓練速度及VRAM用量 (pytorch 2 + xformers 0.17)
    - 測試
-      - 7.4 min / 1000 steps on RTX4070Ti
-      - 7.7G VRAM / 32dim, 30 images (如果顯卡同時有作為螢幕輸出，則還需要另外考慮這部分的VRAM占用)
-      - 7.1G VRAM / 16 dim, 30 images
+      - 3.4 min / 1000 steps on RTX4070Ti (512*512)
+      - 5.7G VRAM / 32dim, 30 images (如果顯卡同時有作為螢幕輸出，則還需要另外考慮這部分的VRAM占用)
    - 輸出模型的大小 (等比例，可直接計算)
       - dim128 : 144MB
       - dim32 : 36MB
@@ -44,6 +56,14 @@ https://github.com/Akegarasu/lora-scripts
    - Overfitting後，通常是手會先出問題，再來是身體的曲線、肢體數量，最後是背景、雜訊噪點 (但是通常最佳輸出會出現在手出問題後)
    - 要強調的一點是，loss不是越低越好，loss跟fitting沒有絕對關係，可能loss低結果underfitting，也可能overfitting (通常是overfitting，除非用了正則化之類的方法)，最終還是要靠觸發詞、model權重出圖測試，用肉眼判斷為準 (以下面的圖為例，結果最好的是綠色那條v19)<br>
    ![](https://user-images.githubusercontent.com/33422418/224232520-89815474-0bfb-4b84-8f10-8bdae35692b4.png)
+6. 關於LyCoris (locon、loha)
+   - 不建議訓練locon、loha，需要更多的訓練時間、更大的model size，但結果通常明顯比lora差 (某些細節確實學的比較快，但不同細節的學習速度看起來很不平均)
+   - 尤其是loha，除了在沒有overfitting時效果比lora差之外，與lora、locon相比，還非常容易overfitting (這也是訓練LyCoris需要用更低的network_dim的原因)
+   - 由於這2種方法訓練了像素部分，增加了像素隨機性，對於角色這種需要強烈固定特徵的來說是非常不適合的，基本上除了畫風訓練，否則別用 (基本上看到一個角色model如果是用LyCoris的，改用LoRA做的話肯定能得到更好的結果)
+   - loha因為使用了2張圖去算，所以實際上是平方操作，為了避免VRAM爆掉，設定的network_dim、conv_dim要設為locon設定的開根號，即√dim
+   - 訓練LyCoris的lr要設低一點 (lora / locon / loha) : 1e-4 / 8e-5 / 5e-5
+   - network_dim32 + conv_dim4 (lora / locon / loha) : 36 / 42 / 84 MB
+   - speed (lora / locon / loha) : 1 / 1.44 / 2 倍的訓練時間
 
 ## Training Data
 1. LoRA對txt中Tag的處理
