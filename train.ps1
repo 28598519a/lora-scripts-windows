@@ -6,15 +6,17 @@ $reg_data_dir = ""                           # directory for regularization imag
 # Train related params | 訓練相關參數
 $resolution = "512,512"      # image resolution w,h. 圖片分辨率，寬,高。支持非正方形，但必須是 64 倍數。
 $batch_size = 2              # batch size | 建議2或4 (若VRAM不夠設1)
-$max_train_epoches = 20      # max train epoches | 最大訓練 epoch
+$max_train_epoches = 10      # max train epoches | 最大訓練 epoch
 $save_every_n_epochs = 2     # save every n epochs | 每 N 個 epoch 保存一次
 $network_dim = 32            # network dim | 常用 4~128，不是越大越好
 $network_alpha = 16          # network alpha | 常用與 network_dim 相同的值或者採用較小的值，如 network_dim的一半 防止下溢。默認值為 1，使用較小的 alpha 需要提升學習率。
 $clip_skip = 2               # clip skip | 一般Anime用 2 (因為NAI)
 $noise_offset = 0            # noise offset | 在訓練中添加噪聲偏移來改良生成非常暗或者非常亮的圖像，推薦參數為0.1
 $keep_tokens = 0             # keep heading N tokens when shuffling caption tokens | 在隨機打亂 tokens 時，保留前N個不變
+$mixed_precision = "fp16"    # "no, fp16, bf16" | 混和精度。30系列及之後的卡可以試試bf16
 $train_unet_only = 0         # train U-Net only | 僅訓練 U-Net，開啟這個會犧牲效果大幅減少顯存使用。6G顯存可以開啟
 $train_text_encoder_only = 0 # train Text Encoder only | 僅訓練 文本編碼器
+$flip_aug = 0                # data augmentation by horizontal flip | 對訓練資料做水平翻轉來得到2倍訓練資料，默認不使用
 
 # Learning rate | 學習率
 $lr = 1e-4 * $batch_size
@@ -30,7 +32,7 @@ $save_model_as = "safetensors" # model save ext | 模型保存格式 ckpt, pt, s
 
 # 其他設置
 $network_weights = ""               # pretrained weights for LoRA network | 若需要從已有的 LoRA 模型上繼續訓練，請填寫 LoRA 模型路徑。
-$min_bucket_reso = 320              # arb min resolution | arb 最小分辨率
+$min_bucket_reso = 256              # arb min resolution | arb 最小分辨率
 $max_bucket_reso = 1024             # arb max resolution | arb 最大分辨率
 $persistent_data_loader_workers = 0 # persistent dataloader workers | 保留加載訓練集的worker，減少每個 epoch 之間的停頓 (只差幾秒，沒必要，而且對內存需求較高)
 
@@ -65,6 +67,10 @@ if ($network_weights) {
 
 if ($reg_data_dir) {
   [void]$ext_args.Add("--reg_data_dir=" + $reg_data_dir)
+}
+
+if ($flip_aug) {
+  [void]$ext_args.Add("--flip_aug=" + $flip_aug)
 }
 
 if ($optimizer_type -ieq "AdamW8bit") {
@@ -116,7 +122,7 @@ python python/Scripts/accelerate.exe launch --num_cpu_threads_per_process=8 "./s
   --output_name=$output_name `
   --train_batch_size=$batch_size `
   --save_every_n_epochs=$save_every_n_epochs `
-  --mixed_precision="fp16" `
+  --mixed_precision=$mixed_precision `
   --save_precision="fp16" `
   --seed="1337" `
   --cache_latents `

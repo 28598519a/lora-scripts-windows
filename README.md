@@ -34,14 +34,15 @@ PS. Error caught was: No module named 'triton'忽視就好，這個是xformers 0
       - Repeats_Concept : \<number>\_\<class>
         - number可以設低一些，一般就是設1
         - class也是屬於關鍵詞，之後生圖的時候使用到這個關鍵詞才有用
-      - 不需要打Tag，打了也沒用
+      - 不需要打Tag
+      - prior_loss_weight參數決定reg對訓練集的影響權重，1表示與訓練集相同 (可以考慮0.3)
       - reg用於泛化性
         - 正則化常用於處理複雜數據集，避免過擬合和欠擬合問題，提高泛化性
         - 在Training data不是很少的情況下 (低於30張)，不建議使用reg，可能會導致欠擬合，增加訓練時間也不一定能成功收斂 (尤其是訓練角色這種需要學習特別固定特徵的且很難描述出來的內容；ex: 臉型、身形，用了reg會導致訓練結果朝向reg的臉型及身形)
       - reg用於準確性
         - 正則化就是給機器一個參考圖片，讓它學習，因此正確使用正則化可以提高訓練準確性
         - 用於增強training data與reg都有的特徵，而只有reg有的特徵會被分離 (即不學；ex: training data只有臉，而reg放了全身，那麼學到的就是臉部特徵及特徵應該位於全身的哪個位置，而不會學到只有臉)，這種用於特徵分離的做法也可以拿來用在訓練背景LoRA之類的
-3. seed參數用於重現結果，如果設定相同且相同seed，應該會得到非常接近的模型
+3. **訓練成功的LoRA，在只使用單一LoRA的情況下，應該要適合在權重為1出圖，如果需要調高或調低LoRA調用權重，表示訓練錯誤**
 4. 關於LoRA訓練速度及VRAM用量 (pytorch 2 + xformers 0.17)
    - 測試
       - 3.4 min / 1000 steps on RTX4070Ti (512*512)
@@ -54,8 +55,7 @@ PS. Error caught was: No module named 'triton'忽視就好，這個是xformers 0
    - 根據訓練其他DeepLearning模型的經驗，train的loss進入抖動期前，vaild的loss會先向上，也就是overfitting會先發生，不過對於lora任務來說稍微overfitting其實是好事
    - Repeats看圖片數量決定，通常是5~8，對於圖片數量少的可能要設高一點 (但要考慮overfitting的問題)，另外多個Concept的話要考慮Repeats*ImageNum的平衡性及主次問題
    - Overfitting後，通常是手會先出問題，再來是身體的曲線、肢體數量，最後是背景、雜訊噪點 (但是通常最佳輸出會出現在手出問題後)
-   - 要強調的一點是，loss不是越低越好，loss跟fitting沒有絕對關係，可能loss低結果underfitting，也可能overfitting (通常是overfitting，除非用了正則化之類的方法)，最終還是要靠觸發詞、model權重出圖測試，用肉眼判斷為準 (以下面的圖為例，結果最好的是綠色那條v19)<br>
-   ![](https://user-images.githubusercontent.com/33422418/224232520-89815474-0bfb-4b84-8f10-8bdae35692b4.png)
+   - 要強調的一點是，loss不是越低越好，一來是可能overfitting，再來因為假設學習目標是A，但實際上你的訓練資料會含有A、B、C，因此目標是要在overfitting前學到最多的A與最少的B、C (所以其實還是得靠實際出圖，用肉眼判斷)
 6. 關於LyCoris (locon、loha)
    - 不建議訓練locon、loha，需要更多的訓練時間、更大的model size，但結果通常明顯比lora差 (某些細節確實學的比較快，但不同細節的學習速度看起來很不平均)
    - 尤其是loha，除了在沒有overfitting時效果比lora差之外，與lora、locon相比，還非常容易overfitting (這也是訓練LyCoris需要用更低的network_dim的原因)
@@ -128,7 +128,7 @@ PS. Error caught was: No module named 'triton'忽視就好，這個是xformers 0
      - nsfw內sex取出為一類，其餘皆為nsfw類，這2個Concept跟sfw的其他Concept放一起訓練 (目前先暫時建議選這個用法)
      - 單獨訓練sfw / nsfw
      - 取sfw 10~20%占比數量的nsfw圖片與sfw放在相同Concept中訓練 (因為nsfw占比太高的話，輸出圖片的布料可能會少)
-     - 對於text類別，好抹的就用小畫家用附近的顏色把字大概抹一抹後，分到原本的類別去就行，不好抹的字少的話就打artist name、twitter username、signature這些tag上去後留著沒關係，字太多的話建議刪掉
+   - 對於text類別，好抹的就用小畫家用附近的顏色把字大概抹一抹後，分到原本的類別去就行，不好抹的字少的話就打artist name、twitter username、signature這些tag上去後留著沒關係，字太多的話建議刪掉
    - 對於背景摳圖的問題，這個圖片少的話建議用小畫家抹一抹大概摳一下，圖片多的話不摳影響較小 (注意一下background類別就好)，如果有摳圖的話可能要打個simple background之類的tag上去
      - 這裡我提供一種不摳圖、不抹圖思路 (只是思路，沒實際測試過):
        1. 對背景非單色的訓練圖片裁減出角色部分丟training folder，原圖丟到對應的reg folder (如此就可以分離角色跟背景，甚至LoRA可以藉此學到角色跟背景的位置關係)
