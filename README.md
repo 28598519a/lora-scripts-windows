@@ -55,7 +55,7 @@ PS. Error caught was: No module named 'triton'忽視就好，這個是xformers 0
    - 根據訓練其他DeepLearning模型的經驗，train的loss進入抖動期前，vaild的loss會先向上，也就是overfitting會先發生，不過對於lora任務來說稍微overfitting其實是好事
    - Repeats看圖片數量決定，通常是5~8，對於圖片數量少的可能要設高一點 (但要考慮overfitting的問題)，另外多個Concept的話要考慮Repeats*ImageNum的平衡性及主次問題
    - Overfitting後，通常是手會先出問題，再來是身體的曲線、肢體數量，最後是背景、雜訊噪點 (但是通常最佳輸出會出現在手出問題後)
-   - 要強調的一點是，loss不是越低越好，一來是可能overfitting，再來因為假設學習目標是A，但實際上你的訓練資料會含有A、B、C，因此目標是要在overfitting前學到最多的A與最少的B、C (所以其實還是得靠實際出圖，用肉眼判斷)
+   - 要強調的一點是，loss不是越低越好，一來是可能overfitting，再來因為假設學習目標是A，但實際上你的訓練資料會含有A、B、C，因此目標是要在overfitting前學到最多的A與最少的B、C，這也是摳圖這種做法的核心原因 (所以其實還是得靠實際出圖，用肉眼判斷)
 6. 關於LyCoris (locon、loha)
    - 不建議訓練locon、loha，需要更多的訓練時間、更大的model size，但結果通常明顯比lora差 (某些細節確實學的比較快，但不同細節的學習速度看起來很不平均)
    - 尤其是loha，除了在沒有overfitting時效果比lora差之外，與lora、locon相比，還非常容易overfitting (這也是訓練LyCoris需要用更低的network_dim的原因)
