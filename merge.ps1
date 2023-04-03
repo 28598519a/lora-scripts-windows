@@ -1,4 +1,6 @@
-﻿$save_precision = "fp16" # precision in saving, default float | 保存精度, 可選 float、fp16、bf16, 默認 float
+﻿# 建議直接用sd-web ui的插件 SuperMerger
+
+$save_precision = "fp16" # precision in saving, default float | 保存精度, 可選 float、fp16、bf16, 默認 float
 $model_1 = "./output/lora_name1.safetensors" # original LoRA model path need to merge (cpkt / safetensors) | 需要合併的模型1路徑
 $model_2 = "./output/lora_name2.safetensors" # original LoRA model path need to merge (cpkt / safetensors) | 需要合併的模型2路徑 (模型1、模型2的rank應該相同)
 $save_to = "./output/lora_name_merge.safetensors" # output LoRA model path, save as ckpt or safetensors | 輸出路徑, 保存格式 cpkt 或 safetensors

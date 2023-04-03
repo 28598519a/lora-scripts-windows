@@ -19,7 +19,7 @@ $train_text_encoder_only = 0 # train Text Encoder only | 僅訓練 文本編碼�
 $flip_aug = 0                # data augmentation by horizontal flip | 對訓練資料做水平翻轉來得到2倍訓練資料，默認不使用
 
 # Learning rate | 學習率
-$lr = 1e-4 * $batch_size
+$lr = 1e-4 * $batch_size               # 也可以試epoch 14配 [Math]::Round([Math]::Sqrt($batch_size),4)
 $unet_lr = 1e-4 * $batch_size
 $text_encoder_lr = 1e-5 * $batch_size
 $lr_scheduler = "cosine_with_restarts" # "linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup" | 學習率動態調整方式

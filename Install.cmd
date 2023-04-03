@@ -2,7 +2,7 @@ python\python.exe -m pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 --
 
 cd sd-scripts
 ..\python\python.exe -m pip install --upgrade -r requirements.txt
-..\python\python.exe -m pip install -U -I --no-deps xformers==0.0.17
+..\python\python.exe -m pip install -U -I --no-deps xformers==0.0.18
 ..\python\python.exe -m pip install lycoris-lora lion-pytorch dadaptation
 
 copy .\bitsandbytes_windows\*.dll ..\python\Lib\site-packages\bitsandbytes\
