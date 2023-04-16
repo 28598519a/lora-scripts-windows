@@ -127,31 +127,57 @@ The majority of scripts is licensed under ASL 2.0 (including codes from Diffuser
 
 ## Change History
 
-- 1 Apr. 2023, 2023/4/1:
-  - Fix an issue that `merge_lora.py` does not work with the latest version.
-  - Fix an issue that `merge_lora.py` does not merge Conv2d3x3 weights.
-  - 最新のバージョンで`merge_lora.py` が動作しない不具合を修正しました。
-  - `merge_lora.py` で `no module found for LoRA weight: ...` と表示され Conv2d3x3 拡張の重みがマージされない不具合を修正しました。
-- 31 Mar. 2023, 2023/3/31:
-  - Fix an issue that the VRAM usage temporarily increases when loading a model in `train_network.py`.
-  - Fix an issue that an error occurs when loading a `.safetensors` model in `train_network.py`. [#354](https://github.com/kohya-ss/sd-scripts/issues/354)
-  - `train_network.py` でモデル読み込み時にVRAM使用量が一時的に大きくなる不具合を修正しました。
-  - `train_network.py` で `.safetensors` 形式のモデルを読み込むとエラーになる不具合を修正しました。[#354](https://github.com/kohya-ss/sd-scripts/issues/354)
-- 30 Mar. 2023, 2023/3/30:
-  - Support [P+](https://prompt-plus.github.io/) training. Thank you jakaline-dev!
-    - See [#327](https://github.com/kohya-ss/sd-scripts/pull/327) for details.
-    - Use `train_textual_inversion_XTI.py` for training. The usage is almost the same as `train_textual_inversion.py`. However, sample image generation during training is not supported.
-    - Use `gen_img_diffusers.py` for image generation (I think Web UI is not supported). Specify the embedding with `--XTI_embeddings` option.
-  - Reduce RAM usage at startup in `train_network.py`. [#332](https://github.com/kohya-ss/sd-scripts/pull/332)  Thank you guaneec!
-  - Support pre-merge for LoRA in `gen_img_diffusers.py`. Specify `--network_merge` option. Note that the `--am` option of the prompt option is no longer available with this option.
+### Naming of LoRA
 
-  - [P+](https://prompt-plus.github.io/) の学習に対応しました。jakaline-dev氏に感謝します。 
-    - 詳細は [#327](https://github.com/kohya-ss/sd-scripts/pull/327) をご参照ください。
-    - 学習には `train_textual_inversion_XTI.py` を使用します。使用法は `train_textual_inversion.py` とほぼ同じです。た
-    だし学習中のサンプル生成には対応していません。
-    - 画像生成には `gen_img_diffusers.py` を使用してください（Web UIは対応していないと思われます）。`--XTI_embeddings` オプションで学習したembeddingを指定してください。
-  - `train_network.py` で起動時のRAM使用量を削減しました。[#332](https://github.com/kohya-ss/sd-scripts/pull/332) guaneec氏に感謝します。
-  - `gen_img_diffusers.py` でLoRAの事前マージに対応しました。`--network_merge` オプションを指定してください。なおプロンプトオプションの `--am` は使用できなくなります。
+The LoRA supported by `train_network.py` has been named to avoid confusion. The documentation has been updated. The following are the names of LoRA types in this repository.
+
+1. __LoRA-LierLa__ : (LoRA for __Li__ n __e__ a __r__  __La__ yers)
+
+    LoRA for Linear layers and Conv2d layers with 1x1 kernel
+
+2. __LoRA-C3Lier__ : (LoRA for __C__ olutional layers with __3__ x3 Kernel and  __Li__ n __e__ a __r__ layers)
+
+    In addition to 1., LoRA for Conv2d layers with 3x3 kernel 
+    
+LoRA-LierLa is the default LoRA type for `train_network.py` (without `conv_dim` network arg). LoRA-LierLa can be used with [our extension](https://github.com/kohya-ss/sd-webui-additional-networks) for AUTOMATIC1111's Web UI, or with the built-in LoRA feature of the Web UI.
+
+To use LoRA-C3Liar with Web UI, please use our extension.
+
+### LoRAの名称について
+
+`train_network.py` がサポートするLoRAについて、混乱を避けるため名前を付けました。ドキュメントは更新済みです。以下は当リポジトリ内の独自の名称です。
+
+1. __LoRA-LierLa__ : (LoRA for __Li__ n __e__ a __r__  __La__ yers、リエラと読みます)
+
+    Linear 層およびカーネルサイズ 1x1 の Conv2d 層に適用されるLoRA
+
+2. __LoRA-C3Lier__ : (LoRA for __C__ olutional layers with __3__ x3 Kernel and  __Li__ n __e__ a __r__ layers、セリアと読みます)
+
+    1.に加え、カーネルサイズ 3x3 の Conv2d 層に適用されるLoRA
+
+LoRA-LierLa は[Web UI向け拡張](https://github.com/kohya-ss/sd-webui-additional-networks)、またはAUTOMATIC1111氏のWeb UIのLoRA機能で使用することができます。
+
+LoRA-C3Liarを使いWeb UIで生成するには拡張を使用してください。
+
+### 14 Apr. 2023, 2023/4/14:
+- Fixed a bug that caused an error when loading DyLoRA with the `--network_weight` option in `train_network.py`.
+- `train_network.py`で、DyLoRAを`--network_weight`オプションで読み込むとエラーになる不具合を修正しました。
+
+### 13 Apr. 2023, 2023/4/13:
+
+- Added support for DyLoRA in `train_network.py`. Please refer to [here](./train_network_README-ja.md#dylora) for details (currently only in Japanese).
+- Added support for caching latents to disk in each training script. Please specify __both__ `--cache_latents` and `--cache_latents_to_disk` options.
+  - The files are saved in the same folder as the images with the extension `.npz`. If you specify the `--flip_aug` option, the files with `_flip.npz` will also be saved.
+  - Multi-GPU training has not been tested.
+  - This feature is not tested with all combinations of datasets and training scripts, so there may be bugs.
+- Added workaround for an error that occurs when training with `fp16` or `bf16` in `fine_tune.py`.
+
+- `train_network.py`でDyLoRAをサポートしました。詳細は[こちら](./train_network_README-ja.md#dylora)をご覧ください。
+- 各学習スクリプトでlatentのディスクへのキャッシュをサポートしました。`--cache_latents`オプションに __加えて__、`--cache_latents_to_disk`オプションを指定してください。
+  - 画像と同じフォルダに、拡張子 `.npz` で保存されます。`--flip_aug`オプションを指定した場合、`_flip.npz`が付いたファイルにも保存されます。
+  - マルチGPUでの学習は未テストです。
+  - すべてのDataset、学習スクリプトの組み合わせでテストしたわけではないため、不具合があるかもしれません。
+- `fine_tune.py`で、`fp16`および`bf16`の学習時にエラーが出る不具合に対して対策を行いました。
 
 ## Sample image generation during training
   A prompt file might look like this, for example

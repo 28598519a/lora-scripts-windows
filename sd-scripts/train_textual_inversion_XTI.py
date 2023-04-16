@@ -13,6 +13,7 @@ import diffusers
 from diffusers import DDPMScheduler
 
 import library.train_util as train_util
+import library.huggingface_util as huggingface_util
 import library.config_util as config_util
 from library.config_util import (
     ConfigSanitizer,
@@ -266,11 +267,13 @@ def train(args):
         vae.requires_grad_(False)
         vae.eval()
         with torch.no_grad():
-            train_dataset_group.cache_latents(vae, args.vae_batch_size)
+            train_dataset_group.cache_latents(vae, args.vae_batch_size, args.cache_latents_to_disk, accelerator.is_main_process)
         vae.to("cpu")
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
+
+        accelerator.wait_for_everyone()
 
     if args.gradient_checkpointing:
         unet.enable_gradient_checkpointing()
@@ -340,9 +343,7 @@ def train(args):
         text_encoder.to(weight_dtype)
 
     # resumeする
-    if args.resume is not None:
-        print(f"resume training from state: {args.resume}")
-        accelerator.load_state(args.resume)
+    train_util.resume_from_local_or_hf_if_specified(accelerator, args)
 
     # epoch数を計算する
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
@@ -417,7 +418,8 @@ def train(args):
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
 
                 # Predict the noise residual
-                noise_pred = unet(noisy_latents, timesteps, encoder_hidden_states=encoder_hidden_states).sample
+                with accelerator.autocast():
+                    noise_pred = unet(noisy_latents, timesteps, encoder_hidden_states=encoder_hidden_states).sample
 
                 if args.v_parameterization:
                     # v-parameterization training
@@ -493,6 +495,8 @@ def train(args):
                 ckpt_file = os.path.join(args.output_dir, ckpt_name)
                 print(f"saving checkpoint: {ckpt_file}")
                 save_weights(ckpt_file, updated_embs, save_dtype)
+                if args.huggingface_repo_id is not None:
+                    huggingface_util.upload(args, ckpt_file, "/" + ckpt_name)
 
             def remove_old_func(old_epoch_no):
                 old_ckpt_name = train_util.EPOCH_FILE_NAME.format(model_name, old_epoch_no) + "." + args.save_model_as
@@ -534,6 +538,8 @@ def train(args):
 
         print(f"save trained model to {ckpt_file}")
         save_weights(ckpt_file, updated_embs, save_dtype)
+        if args.huggingface_repo_id is not None:
+            huggingface_util.upload(args, ckpt_file, "/" + ckpt_name, force_sync_upload=True)
         print("model saved.")
 
 
@@ -600,7 +606,7 @@ def setup_parser() -> argparse.ArgumentParser:
     train_util.add_training_arguments(parser, True)
     train_util.add_optimizer_arguments(parser)
     config_util.add_config_arguments(parser)
-    custom_train_functions.add_custom_train_arguments(parser)
+    custom_train_functions.add_custom_train_arguments(parser, False)
 
     parser.add_argument(
         "--save_model_as",

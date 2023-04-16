@@ -13,6 +13,7 @@ import diffusers
 from diffusers import DDPMScheduler
 
 import library.train_util as train_util
+import library.huggingface_util as huggingface_util
 import library.config_util as config_util
 from library.config_util import (
     ConfigSanitizer,
@@ -184,10 +185,10 @@ def train(args):
     blueprint = blueprint_generator.generate(user_config, args, tokenizer=tokenizer)
     train_dataset_group = config_util.generate_dataset_group_by_blueprint(blueprint.dataset_group)
 
-    current_epoch = Value('i',0)
-    current_step = Value('i',0)
+    current_epoch = Value("i", 0)
+    current_step = Value("i", 0)
     ds_for_collater = train_dataset_group if args.max_data_loader_n_workers == 0 else None
-    collater = train_util.collater_class(current_epoch,current_step, ds_for_collater)
+    collater = train_util.collater_class(current_epoch, current_step, ds_for_collater)
 
     # make captions: tokenstring tokenstring1 tokenstring2 ...tokenstringn という文字列に書き換える超乱暴な実装
     if use_template:
@@ -232,11 +233,13 @@ def train(args):
         vae.requires_grad_(False)
         vae.eval()
         with torch.no_grad():
-            train_dataset_group.cache_latents(vae, args.vae_batch_size)
+            train_dataset_group.cache_latents(vae, args.vae_batch_size, args.cache_latents_to_disk, accelerator.is_main_process)
         vae.to("cpu")
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
+
+        accelerator.wait_for_everyone()
 
     if args.gradient_checkpointing:
         unet.enable_gradient_checkpointing()
@@ -261,7 +264,9 @@ def train(args):
 
     # 学習ステップ数を計算する
     if args.max_train_epochs is not None:
-        args.max_train_steps = args.max_train_epochs * math.ceil(len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps)
+        args.max_train_steps = args.max_train_epochs * math.ceil(
+            len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps
+        )
         print(f"override steps. steps for {args.max_train_epochs} epochs is / 指定エポックまでのステップ数: {args.max_train_steps}")
 
     # データセット側にも学習ステップを送信
@@ -304,9 +309,7 @@ def train(args):
         text_encoder.to(weight_dtype)
 
     # resumeする
-    if args.resume is not None:
-        print(f"resume training from state: {args.resume}")
-        accelerator.load_state(args.resume)
+    train_util.resume_from_local_or_hf_if_specified(accelerator, args)
 
     # epoch数を計算する
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
@@ -338,7 +341,7 @@ def train(args):
 
     for epoch in range(num_train_epochs):
         print(f"epoch {epoch+1}/{num_train_epochs}")
-        current_epoch.value = epoch+1
+        current_epoch.value = epoch + 1
 
         text_encoder.train()
 
@@ -358,7 +361,7 @@ def train(args):
 
                 # Get the text embedding for conditioning
                 input_ids = batch["input_ids"].to(accelerator.device)
-                # weight_dtype) use float instead of fp16/bf16 because text encoder is float
+                # use float instead of fp16/bf16 because text encoder is float
                 encoder_hidden_states = train_util.get_hidden_states(args, input_ids, tokenizer, text_encoder, torch.float)
 
                 # Sample noise that we'll add to the latents
@@ -376,7 +379,8 @@ def train(args):
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
 
                 # Predict the noise residual
-                noise_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
+                with accelerator.autocast():
+                    noise_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
 
                 if args.v_parameterization:
                     # v-parameterization training
@@ -386,9 +390,9 @@ def train(args):
 
                 loss = torch.nn.functional.mse_loss(noise_pred.float(), target.float(), reduction="none")
                 loss = loss.mean([1, 2, 3])
-                
+
                 if args.min_snr_gamma:
-                  loss = apply_snr_weight(loss, timesteps, noise_scheduler, args.min_snr_gamma)
+                    loss = apply_snr_weight(loss, timesteps, noise_scheduler, args.min_snr_gamma)
 
                 loss_weights = batch["loss_weights"]  # 各sampleごとのweight
                 loss = loss * loss_weights
@@ -452,6 +456,8 @@ def train(args):
                 ckpt_file = os.path.join(args.output_dir, ckpt_name)
                 print(f"saving checkpoint: {ckpt_file}")
                 save_weights(ckpt_file, updated_embs, save_dtype)
+                if args.huggingface_repo_id is not None:
+                    huggingface_util.upload(args, ckpt_file, "/" + ckpt_name)
 
             def remove_old_func(old_epoch_no):
                 old_ckpt_name = train_util.EPOCH_FILE_NAME.format(model_name, old_epoch_no) + "." + args.save_model_as
@@ -492,6 +498,8 @@ def train(args):
 
         print(f"save trained model to {ckpt_file}")
         save_weights(ckpt_file, updated_embs, save_dtype)
+        if args.huggingface_repo_id is not None:
+            huggingface_util.upload(args, ckpt_file, "/" + ckpt_name, force_sync_upload=True)
         print("model saved.")
 
 
@@ -546,7 +554,7 @@ def setup_parser() -> argparse.ArgumentParser:
     train_util.add_training_arguments(parser, True)
     train_util.add_optimizer_arguments(parser)
     config_util.add_config_arguments(parser)
-    custom_train_functions.add_custom_train_arguments(parser)
+    custom_train_functions.add_custom_train_arguments(parser, False)
 
     parser.add_argument(
         "--save_model_as",

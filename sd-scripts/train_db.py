@@ -23,8 +23,7 @@ from library.config_util import (
     BlueprintGenerator,
 )
 import library.custom_train_functions as custom_train_functions
-from library.custom_train_functions import apply_snr_weight
-
+from library.custom_train_functions import apply_snr_weight, get_weighted_text_embeddings
 
 def train(args):
     train_util.verify_training_args(args)
@@ -118,11 +117,13 @@ def train(args):
         vae.requires_grad_(False)
         vae.eval()
         with torch.no_grad():
-            train_dataset_group.cache_latents(vae, args.vae_batch_size)
+            train_dataset_group.cache_latents(vae, args.vae_batch_size, args.cache_latents_to_disk, accelerator.is_main_process)
         vae.to("cpu")
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
+
+        accelerator.wait_for_everyone()
 
     # 学習を準備する：モデルを適切な状態にする
     train_text_encoder = args.stop_text_encoder_training is None or args.stop_text_encoder_training >= 0
@@ -202,9 +203,7 @@ def train(args):
         train_util.patch_accelerator_for_fp16_training(accelerator)
 
     # resumeする
-    if args.resume is not None:
-        print(f"resume training from state: {args.resume}")
-        accelerator.load_state(args.resume)
+    train_util.resume_from_local_or_hf_if_specified(accelerator, args)
 
     # epoch数を計算する
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
@@ -273,10 +272,19 @@ def train(args):
 
                 # Get the text embedding for conditioning
                 with torch.set_grad_enabled(global_step < args.stop_text_encoder_training):
-                    input_ids = batch["input_ids"].to(accelerator.device)
-                    encoder_hidden_states = train_util.get_hidden_states(
-                        args, input_ids, tokenizer, text_encoder, None if not args.full_fp16 else weight_dtype
-                    )
+                    if args.weighted_captions:
+                      encoder_hidden_states = get_weighted_text_embeddings(tokenizer,
+                        text_encoder,
+                        batch["captions"],
+                        accelerator.device,
+                        args.max_token_length // 75 if args.max_token_length else 1,
+                        clip_skip=args.clip_skip,
+                        )
+                    else:
+                      input_ids = batch["input_ids"].to(accelerator.device)
+                      encoder_hidden_states = train_util.get_hidden_states(
+                          args, input_ids, tokenizer, text_encoder, None if not args.full_fp16 else weight_dtype
+                      )
 
                 # Sample a random timestep for each image
                 timesteps = torch.randint(0, noise_scheduler.config.num_train_timesteps, (b_size,), device=latents.device)
