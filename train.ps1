@@ -58,9 +58,10 @@ $conv_alpha = 1                # conv alpha | 類似於 network_alpha，可以�
 
 
 # ============= DO NOT MODIFY CONTENTS BELOW | 請勿修改下方內容 =====================
-# Activate python env
+# Activate python env & disable windows triton error
 $Env:PATH = "C:\Windows\system32;.\python;.\python\Scripts"
 $Env:HF_HOME = "huggingface"
+$Env:XFORMERS_FORCE_DISABLE_TRITON = "1"
 $network_module = "networks.lora"
 $ext_args = [System.Collections.ArrayList]::new()
 
