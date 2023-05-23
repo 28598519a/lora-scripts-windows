@@ -19,8 +19,8 @@ $keep_tokens = 0                  # keep heading N tokens when shuffling caption
 $mixed_precision = "fp16"         # "no, fp16, bf16" | 混和精度。30系列及之後的卡可以試試bf16
 $train_unet_only = $false         # train U-Net only | 僅訓練 U-Net，開啟這個會犧牲效果大幅減少顯存使用。6G顯存可以開啟
 $train_text_encoder_only = $false # train Text Encoder only | 僅訓練 文本編碼器
-$noise_offset = 0                 # noise offset | 在訓練中添加噪聲偏移來改良生成非常暗或者非常亮的圖像，推薦參數為0.1。0為不啟用
-$min_snr_gamma = 0                # minimum signal-to-noise ratio (SNR) value for gamma-ray | 伽馬射線事件的最小信噪比（SNR）值，推薦參數為5。0為不啟用 (實驗性功能，目前不建議使用)
+$noise_offset = 0                 # noise offset | 在訓練中添加噪聲偏移來生成非常暗或者非常亮的圖像，推薦參數為0.1。0為不啟用 (可能會造成色溫偏移，不建議使用)
+$min_snr_gamma = 0                # minimum signal-to-noise ratio (SNR) value for gamma-ray | 伽馬射線事件的最小信噪比（SNR）值，用於增加訓練穩定性，推薦參數為5。0為不啟用 (不適用於Dadaptation)
 $flip_aug = $false                # data augmentation by horizontal flip | 對訓練資料做水平翻轉來得到2倍訓練資料。默認不使用
 
 # Learning rate | 學習率
