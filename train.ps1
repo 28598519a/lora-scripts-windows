@@ -10,17 +10,18 @@ $save_model_as = "safetensors" # model save ext | 模型保存格式 ckpt, pt, s
 # Train related params | 訓練相關參數
 $resolution = "512,512"           # image resolution w,h. 圖片分辨率，寬,高。支持非正方形，但必須是 64 倍數。
 $batch_size = 2                   # batch size | 建議2或4 (若VRAM不夠設1)
-$max_train_epoches = 10           # max train epoches | 最大訓練 epoch
+$max_train_epoches = 12           # max train epoches | 最大訓練 epoch
 $save_every_n_epochs = 2          # save every n epochs | 每 N 個 epoch 保存一次
 $network_dim = 32                 # network dim | 常用 4~128，不是越大越好
 $network_alpha = 16               # network alpha | 常用與 network_dim 相同的值或者採用較小的值，如 network_dim 的一半 防止下溢。默認值為 1，使用較小的 alpha 需要提升學習率。
 $clip_skip = 2                    # clip skip | 一般Anime用 2 (因為NAI)
 $keep_tokens = 0                  # keep heading N tokens when shuffling caption tokens | 在隨機打亂 tokens 時，保留前N個不變
 $mixed_precision = "fp16"         # "no, fp16, bf16" | 混和精度。30系列及之後的卡可以試試bf16
+$sampler = ""                     # "ddim, euler, euler_a" | 預設值ddim
 $train_unet_only = $false         # train U-Net only | 僅訓練 U-Net，開啟這個會犧牲效果大幅減少顯存使用。6G顯存可以開啟
 $train_text_encoder_only = $false # train Text Encoder only | 僅訓練 文本編碼器
 $noise_offset = 0                 # noise offset | 在訓練中添加噪聲偏移來生成非常暗或者非常亮的圖像，推薦參數為0.1。0為不啟用 (可能會造成色溫偏移，不建議使用)
-$min_snr_gamma = 0                # minimum signal-to-noise ratio (SNR) value for gamma-ray | 伽馬射線事件的最小信噪比（SNR）值，用於增加訓練穩定性，推薦參數為5。0為不啟用 (不適用於Dadaptation)
+$min_snr_gamma = 0                # minimum signal-to-noise ratio (SNR) value for gamma-ray | 伽馬射線事件的最小信噪比（SNR）值，用於增加訓練穩定性，推薦參數為5。0為不啟用 (不建議跟DAdaptation一起使用)
 $flip_aug = $false                # data augmentation by horizontal flip | 對訓練資料做水平翻轉來得到2倍訓練資料。默認不使用
 
 # Learning rate | 學習率
@@ -48,7 +49,7 @@ $persistent_data_loader_workers = $false # persistent dataloader workers | 保�
 $log_as_outputname = $true               # Add output_name on log name prefix | 將log保存名稱開頭加上模型保存名稱。默認值為當前時間
 
 # 優化器設置
-$optimizer_type = "AdamW8bit" # "AdamW8bit", "Lion", "DAdaptation" | AdamW8bit : 8bit adam 優化器節省顯存。部分 10 系老顯卡無法使用
+$optimizer_type = "DAdaptAdam" # "AdamW8bit", "Lion", "DAdaptAdam"
 
 # LyCORIS 訓練設置
 $enable_lycoris_train = $false # enable LyCORIS train | 啟用 LyCORIS 訓練 (Full Net LoRA)。啟用後 network_dim 和 network_alpha 應選擇較小的值，比如 2~16
@@ -85,20 +86,19 @@ if ($flip_aug) {
   [void]$ext_args.Add("--flip_aug")
 }
 
-if ($optimizer_type -ieq "AdamW8bit") {
-  [void]$ext_args.Add("--use_8bit_adam")
+if ($sampler) {
+  [void]$ext_args.Add("--sample_sampler=" + $sampler)
 }
 
-if ($optimizer_type -ieq "Lion") {
-  [void]$ext_args.Add("--use_lion_optimizer")
-}
-
-if ($optimizer_type -ieq "DAdaptation") {
-  [void]$ext_args.Add("--optimizer_type=" + $optimizer_type)
-  [void]$ext_args.Add("--optimizer_args=`"decouple=True`"")
+if ($optimizer_type -ieq "DAdaptAdam") {
+  [void]$ext_args.Add("--optimizer_args")
+  [void]$ext_args.Add("decouple=True")
+  [void]$ext_args.Add("weight_decay=0.01")
+  [void]$ext_args.Add("betas=0.9,0.99")
+  $lr_scheduler = "constant"
   $lr = 1
   $unet_lr = 1
-  $text_encoder_lr = 0.5
+  $text_encoder_lr = 1
 }
 
 if ($noise_offset) {
@@ -156,6 +156,7 @@ python python/Scripts/accelerate.exe launch --num_cpu_threads_per_process=8 "./s
   --lr_scheduler=$lr_scheduler `
   --lr_warmup_steps=$lr_warmup_steps `
   --lr_scheduler_num_cycles=$lr_restart_cycles `
+  --optimizer_type=$optimizer_type `
   --network_dim=$network_dim `
   --network_alpha=$network_alpha `
   --output_name=$output_name `
