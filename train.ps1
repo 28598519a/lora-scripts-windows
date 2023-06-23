@@ -16,13 +16,13 @@ $network_dim = 32                 # network dim | 常用 4~128，不是越大越
 $network_alpha = 16               # network alpha | 常用與 network_dim 相同的值或者採用較小的值，如 network_dim 的一半 防止下溢。默認值為 1，使用較小的 alpha 需要提升學習率。
 $clip_skip = 2                    # clip skip | 一般Anime用 2 (因為NAI)
 $keep_tokens = 0                  # keep heading N tokens when shuffling caption tokens | 在隨機打亂 tokens 時，保留前N個不變
-$mixed_precision = "fp16"         # "no, fp16, bf16" | 混和精度。30系列及之後的卡可以試試bf16
-$sampler = ""                     # "ddim, euler, euler_a" | 預設值ddim
+$mixed_precision = "bf16"         # "no, fp16, bf16" | 混和精度。30系列及之後的卡可以使用bf16
 $train_unet_only = $false         # train U-Net only | 僅訓練 U-Net，開啟這個會犧牲效果大幅減少顯存使用。6G顯存可以開啟
 $train_text_encoder_only = $false # train Text Encoder only | 僅訓練 文本編碼器
 $noise_offset = 0                 # noise offset | 在訓練中添加噪聲偏移來生成非常暗或者非常亮的圖像，推薦參數為0.1。0為不啟用 (可能會造成色溫偏移，不建議使用)
 $min_snr_gamma = 0                # minimum signal-to-noise ratio (SNR) value for gamma-ray | 伽馬射線事件的最小信噪比（SNR）值，用於增加訓練穩定性，推薦參數為5。0為不啟用 (不建議跟DAdaptation一起使用)
 $flip_aug = $false                # data augmentation by horizontal flip | 對訓練資料做水平翻轉來得到2倍訓練資料。默認不使用
+$random_seed = $false             # random seed | 使用隨機訓練種子
 
 # Learning rate | 學習率
 $lr = 1e-4 * $batch_size               # 也可以試epoch 14配 [Math]::Round([Math]::Sqrt($batch_size),4)
@@ -57,6 +57,13 @@ $algo = "lora"                 # LyCORIS network algo | LyCORIS 網絡算法。�
 $conv_dim = 4                  # conv dim | 類似於 network_dim，推薦為 4
 $conv_alpha = 1                # conv alpha | 類似於 network_alpha，可以採用與 conv_dim 一致或者更小的值
 
+# Debug | 調試設置
+$debug_dataset = $false        # 不訓練，僅檢查學習的圖片與Tag (按Esc退出 / S下一個Step / E下一個Epoch)
+$output_sample = $false        # Output sample images during training | 訓練中輸出樣本
+$sampler = "euler_a"           # "ddim, euler, euler_a" | 訓練中輸出樣本所使用的採樣器
+$sample_every_n_epochs = 2     # Output sample every n epochs | 每 N 個 epoch 輸出一次樣本
+$prompt_file = "./train/sample_prompts.txt" # Prompts for output sample | 訓練中輸出樣本使用的prompts
+
 
 # ============= DO NOT MODIFY CONTENTS BELOW | 請勿修改下方內容 =====================
 # Activate python env & disable windows triton error
@@ -86,8 +93,11 @@ if ($flip_aug) {
   [void]$ext_args.Add("--flip_aug")
 }
 
-if ($sampler) {
-  [void]$ext_args.Add("--sample_sampler=" + $sampler)
+if ($random_seed) {
+  $seed = Get-Random
+}
+else {
+  $seed = "1337"
 }
 
 if ($optimizer_type -ieq "DAdaptAdam") {
@@ -115,6 +125,21 @@ if ($persistent_data_loader_workers) {
 
 if ($log_as_outputname) {
   [void]$ext_args.Add("--log_prefix=" + $output_name + '_')
+}
+
+if ($debug_dataset) {
+  [void]$ext_args.Add("--debug_dataset")
+}
+
+if ($output_sample) {
+  if ([System.IO.File]::Exists($prompt_file)) {
+    [void]$ext_args.Add("--sample_sampler=" + $sampler)
+    [void]$ext_args.Add("--sample_every_n_epochs=" + $sample_every_n_epochs)
+    [void]$ext_args.Add("--sample_prompts=" + $prompt_file)
+  }
+  else {
+    echo "Prompt file not exists."
+  }
 }
 
 # network_args相關的要擺在這之後
@@ -164,7 +189,7 @@ python python/Scripts/accelerate.exe launch --num_cpu_threads_per_process=8 "./s
   --save_every_n_epochs=$save_every_n_epochs `
   --mixed_precision=$mixed_precision `
   --save_precision="fp16" `
-  --seed="1337" `
+  --seed=$seed `
   --cache_latents `
   --clip_skip=$clip_skip `
   --prior_loss_weight=1 `

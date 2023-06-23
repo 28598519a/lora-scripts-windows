@@ -1,0 +1,11 @@
+# prompt 1
+masterpiece, best quaility, 1girl, --n lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, --w 512  --h 768  --l 9  --s 40  --d 4142535151
+
+# prompt 2
+masterpiece, best quaility, 1girl, graf zeppelin, --n lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, --w 512  --h 768  --l 9  --s 40  --d 4142535151
+
+# prompt 3
+masterpiece, best quaility, 1girl, graf zeppelin, uniform, --n lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, --w 512  --h 768  --l 9  --s 40  --d 4142535151
+
+# prompt 4
+masterpiece, best quaility, 1girl, graf zeppelin, abyssal, --n lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, --w 512  --h 768  --l 9  --s 40  --d 4142535151
