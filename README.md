@@ -3,6 +3,8 @@
 https://github.com/kohya-ss/sd-scripts<br>
 https://github.com/Akegarasu/lora-scripts
 
+Note: sd-script 813 commits 對應 sd-script 0.6.5 version, 目前對於sdxl模型的訓練暫時沒打算立即跟進
+
 ## 安裝
 **解壓縮python_310.rar**<br>
 **執行Install.cmd** (如果因為網路問題沒裝成功就重新執行直到成功完成)
