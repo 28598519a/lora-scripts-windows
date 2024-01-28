@@ -22,7 +22,8 @@ PS. Error caught was: No module named 'triton'忽視就好，這個是xformers 0
    1. pretrained_model
       - 應該重要的是主模型能理解Tag就好，至於主模型本身是什麼畫風可能不太重要
       - 主模型選擇的優先順序:
-         - Novel AI > AnythingV3.0 > AnythingV4.5 (Purned ≥ Full)
+         - Anime: Novel AI > AnythingV3.0 > AnythingV4.5 (Purned > Full)
+         - Realistic: Stable Diffusion v1-5 > Chilloutmix-Ni > majicMIX-realistic
          - Full或是Pruned結果其實很接近 (VRAM占用也相同)
          - 推測Mix越多的模型越容易overfitting，原因不明
    2. train_data_dir
@@ -139,9 +140,9 @@ PS. Error caught was: No module named 'triton'忽視就好，這個是xformers 0
 
 ## Tagger
 建議使用WD14 Tagger而非DeepDanbooru<br>
-https://github.com/toriato/stable-diffusion-webui-wd14-tagger
+https://github.com/picobyte/stable-diffusion-webui-wd14-tagger
 
 1. 直接在SD-webui的Extensions搜尋就行，裝好後關掉重開應該就會看到Tagger欄了
-2. Interrogator建議選擇**wd14-swinv2-v2**
+2. Interrogator建議選擇**WD14 moat tagger v2**
 3. 打標的時候要勾Remove duplicated tag
 4. 如果之後訓練出來的模型發現某種元素特別容易出現而且改Prompt也去不太掉，則要考慮針對性在含有該元素的訓練圖片打上那個Tag，讓LoRA可以學到那個Tag與對應的元素，這樣才不會融合進其他觸發詞中
